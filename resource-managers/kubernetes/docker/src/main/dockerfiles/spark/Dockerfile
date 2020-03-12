@@ -16,7 +16,14 @@
 #
 ARG java_image_tag=8-jre-slim
 
-FROM openjdk:${java_image_tag}
+FROM maven:3.5.4-jdk-8 AS build-env
+WORKDIR /spark
+ADD . /spark
+ENV MAVEN_OPTS="-Xmx2g -XX:ReservedCodeCacheSize=1g"
+RUN dev/make-distribution.sh --name dla-spark -Phadoop-2.7 -Phive -Phive-thriftserver -Pkubernetes -T 4 -DskipTests -DrecompileMode=all -X
+
+
+FROM openjdk:8-jdk-slim
 
 ARG spark_uid=185
 
@@ -42,13 +49,13 @@ RUN set -ex && \
     chgrp root /etc/passwd && chmod ug+rw /etc/passwd && \
     rm -rf /var/cache/apt/*
 
-COPY jars /opt/spark/jars
-COPY bin /opt/spark/bin
-COPY sbin /opt/spark/sbin
-COPY kubernetes/dockerfiles/spark/entrypoint.sh /opt/
-COPY examples /opt/spark/examples
-COPY kubernetes/tests /opt/spark/tests
-COPY data /opt/spark/data
+COPY --from=build-env /spark/dist/${spark_jars} /opt/spark/jars
+COPY --from=build-env /spark/dist/bin /opt/spark/bin
+COPY --from=build-env /spark/dist/sbin /opt/spark/sbin
+COPY --from=build-env /spark/dist/${img_path}/spark/entrypoint.sh /opt/
+COPY --from=build-env /spark/dist/examples /opt/spark/examples
+COPY --from=build-env /spark/dist/${k8s_tests} /opt/spark/tests
+COPY --from=build-env /spark/dist/data /opt/spark/data
 
 ENV SPARK_HOME /opt/spark
 
