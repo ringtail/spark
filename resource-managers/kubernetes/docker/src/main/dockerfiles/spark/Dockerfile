@@ -60,8 +60,8 @@ COPY --from=build-env /spark/dist/data /opt/spark/data
 RUN mkdir -p /etc/metrics/conf
 # Add the Prometheus JMX exporter Java agent jar for exposing metrics sent to the JmxSink to Prometheus.
 ADD https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.12.0/jmx_prometheus_javaagent-0.12.0.jar /prometheus/
-COPY resource-managers/kubernetes/docker/src/main/spark/conf/metrics.properties /etc/metrics/conf
-COPY resource-managers/kubernetes/docker/src/main/spark/conf/prometheus.yaml /etc/metrics/conf
+COPY resource-managers/kubernetes/docker/src/main/dockerfiles/spark/conf/metrics.properties /etc/metrics/conf
+COPY resource-managers/kubernetes/docker/src/main/dockerfiles/spark/conf/prometheus.yaml /etc/metrics/conf
 
 
 ENV SPARK_HOME /opt/spark
