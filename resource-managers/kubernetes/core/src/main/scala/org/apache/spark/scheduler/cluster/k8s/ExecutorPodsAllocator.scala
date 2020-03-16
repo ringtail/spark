@@ -30,11 +30,11 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.util.{Clock, Utils}
 
 private[spark] class ExecutorPodsAllocator(
-    conf: SparkConf,
-    executorBuilder: KubernetesExecutorBuilder,
-    kubernetesClient: KubernetesClient,
-    snapshotsStore: ExecutorPodsSnapshotsStore,
-    clock: Clock) extends Logging {
+                                            conf: SparkConf,
+                                            executorBuilder: KubernetesExecutorBuilder,
+                                            kubernetesClient: KubernetesClient,
+                                            snapshotsStore: ExecutorPodsSnapshotsStore,
+                                            clock: Clock) extends Logging {
 
   private val EXECUTOR_ID_COUNTER = new AtomicLong(0L)
 
@@ -63,7 +63,10 @@ private[spark] class ExecutorPodsAllocator(
   // snapshot yet. Mapped to the timestamp when they were created.
   private val newlyCreatedExecutors = mutable.Map.empty[Long, Long]
 
+  private val executorPodsEmitter = new ExecutorPodsEmitter(kubernetesClient)
+
   def start(applicationId: String): Unit = {
+    executorPodsEmitter.start()
     snapshotsStore.addSubscriber(podAllocationDelay) {
       onNewSnapshots(applicationId, _)
     }
@@ -123,7 +126,7 @@ private[spark] class ExecutorPodsAllocator(
         val numExecutorsToAllocate = math.min(
           currentTotalExpectedExecutors - currentRunningExecutors, podAllocationSize)
         logInfo(s"Going to request $numExecutorsToAllocate executors from Kubernetes.")
-        for ( _ <- 0 until numExecutorsToAllocate) {
+        for (_ <- 0 until numExecutorsToAllocate) {
           val newExecutorId = EXECUTOR_ID_COUNTER.incrementAndGet()
           val executorConf = KubernetesConf.createExecutorConf(
             conf,
@@ -136,8 +139,9 @@ private[spark] class ExecutorPodsAllocator(
             .addToContainers(executorPod.container)
             .endSpec()
             .build()
-          kubernetesClient.pods().create(podWithAttachedContainer)
+          executorPodsEmitter ! CreateExecutor(podWithAttachedContainer)
           newlyCreatedExecutors(newExecutorId) = clock.getTimeMillis()
+          logInfo(s"Requested executor async with id $newExecutorId from Kubernetes.")
           logDebug(s"Requested executor with id $newExecutorId from Kubernetes.")
         }
       } else if (currentRunningExecutors >= currentTotalExpectedExecutors) {
