@@ -16,13 +16,18 @@
  */
 package org.apache.spark.deploy.k8s.features.bindings
 
-import scala.collection.JavaConverters._
-
-import org.apache.spark.{SparkConf, SparkFunSuite}
-import org.apache.spark.deploy.k8s.{KubernetesConf, KubernetesDriverSpecificConf, SparkPod}
+import io.fabric8.kubernetes.api.model.Toleration
 import org.apache.spark.deploy.k8s.Config._
 import org.apache.spark.deploy.k8s.Constants._
 import org.apache.spark.deploy.k8s.submit.PythonMainAppResource
+import org.apache.spark.deploy.k8s.{
+  KubernetesConf,
+  KubernetesDriverSpecificConf,
+  SparkPod
+}
+import org.apache.spark.{SparkConf, SparkFunSuite}
+
+import scala.collection.JavaConverters._
 
 class PythonDriverFeatureStepSuite extends SparkFunSuite {
 
@@ -44,7 +49,8 @@ class PythonDriverFeatureStepSuite extends SparkFunSuite {
         Some(PythonMainAppResource("local:///main.py")),
         "test-app",
         "python-runner",
-        Seq("5", "7", "9")),
+        Seq("5", "7", "9")
+      ),
       appResourceNamePrefix = "",
       appId = "",
       roleLabels = Map.empty,
@@ -53,15 +59,16 @@ class PythonDriverFeatureStepSuite extends SparkFunSuite {
       roleSecretEnvNamesToKeyRefs = Map.empty,
       roleEnvs = Map.empty,
       roleVolumes = Nil,
-      sparkFiles = Seq.empty[String])
+      driverTolerations = Seq.empty[Toleration],
+      executorTolerations = Seq.empty[Toleration],
+      sparkFiles = Seq.empty[String]
+    )
 
     val step = new PythonDriverFeatureStep(kubernetesConf)
     val driverPod = step.configurePod(baseDriverPod).pod
     val driverContainerwithPySpark = step.configurePod(baseDriverPod).container
     assert(driverContainerwithPySpark.getEnv.size === 4)
-    val envs = driverContainerwithPySpark
-      .getEnv
-      .asScala
+    val envs = driverContainerwithPySpark.getEnv.asScala
       .map(env => (env.getName, env.getValue))
       .toMap
     assert(envs(ENV_PYSPARK_PRIMARY) === expectedMainResource)
@@ -81,7 +88,8 @@ class PythonDriverFeatureStepSuite extends SparkFunSuite {
         Some(PythonMainAppResource("local:///main.py")),
         "test-class-py",
         "python-runner",
-        Seq.empty[String]),
+        Seq.empty[String]
+      ),
       appResourceNamePrefix = "",
       appId = "",
       roleLabels = Map.empty,
@@ -90,19 +98,24 @@ class PythonDriverFeatureStepSuite extends SparkFunSuite {
       roleSecretEnvNamesToKeyRefs = Map.empty,
       roleEnvs = Map.empty,
       roleVolumes = Nil,
-      sparkFiles = Seq.empty[String])
+      driverTolerations = Seq.empty[Toleration],
+      executorTolerations = Seq.empty[Toleration],
+      sparkFiles = Seq.empty[String]
+    )
     val step = new PythonDriverFeatureStep(kubernetesConf)
     val driverContainerwithPySpark = step.configurePod(baseDriverPod).container
-    val args = driverContainerwithPySpark
-      .getArgs.asScala
+    val args = driverContainerwithPySpark.getArgs.asScala
     assert(driverContainerwithPySpark.getArgs.size === 5)
-    assert(args === List(
-      "driver-py",
-      "--properties-file", SPARK_CONF_PATH,
-      "--class", "test-class-py"))
-    val envs = driverContainerwithPySpark
-      .getEnv
-      .asScala
+    assert(
+      args === List(
+        "driver-py",
+        "--properties-file",
+        SPARK_CONF_PATH,
+        "--class",
+        "test-class-py"
+      )
+    )
+    val envs = driverContainerwithPySpark.getEnv.asScala
       .map(env => (env.getName, env.getValue))
       .toMap
     assert(envs(ENV_PYSPARK_MAJOR_PYTHON_VERSION) === "3")

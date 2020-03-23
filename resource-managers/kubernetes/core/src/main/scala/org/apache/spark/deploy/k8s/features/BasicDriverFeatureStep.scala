@@ -16,22 +16,20 @@
  */
 package org.apache.spark.deploy.k8s.features
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-
 import io.fabric8.kubernetes.api.model._
-
 import org.apache.spark.SparkException
-import org.apache.spark.deploy.k8s._
 import org.apache.spark.deploy.k8s.Config._
 import org.apache.spark.deploy.k8s.Constants._
-import org.apache.spark.deploy.k8s.submit._
+import org.apache.spark.deploy.k8s._
 import org.apache.spark.internal.config._
 import org.apache.spark.ui.SparkUI
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+
 private[spark] class BasicDriverFeatureStep(
-    conf: KubernetesConf[KubernetesDriverSpecificConf])
-  extends KubernetesFeatureConfigStep {
+  conf: KubernetesConf[KubernetesDriverSpecificConf]
+) extends KubernetesFeatureConfigStep {
 
   private val driverPodName = conf
     .get(KUBERNETES_DRIVER_POD_NAME)
@@ -39,7 +37,9 @@ private[spark] class BasicDriverFeatureStep(
 
   private val driverContainerImage = conf
     .get(DRIVER_CONTAINER_IMAGE)
-    .getOrElse(throw new SparkException("Must specify the driver container image"))
+    .getOrElse(
+      throw new SparkException("Must specify the driver container image")
+    )
 
   // CPU settings
   private val driverCpuCores = conf.get("spark.driver.cores", "1")
@@ -49,13 +49,16 @@ private[spark] class BasicDriverFeatureStep(
   private val driverMemoryMiB = conf.get(DRIVER_MEMORY)
   private val memoryOverheadMiB = conf
     .get(DRIVER_MEMORY_OVERHEAD)
-    .getOrElse(math.max((conf.get(MEMORY_OVERHEAD_FACTOR) * driverMemoryMiB).toInt,
-      MEMORY_OVERHEAD_MIN_MIB))
+    .getOrElse(
+      math.max(
+        (conf.get(MEMORY_OVERHEAD_FACTOR) * driverMemoryMiB).toInt,
+        MEMORY_OVERHEAD_MIN_MIB
+      )
+    )
   private val driverMemoryWithOverheadMiB = driverMemoryMiB + memoryOverheadMiB
 
   override def configurePod(pod: SparkPod): SparkPod = {
-    val driverCustomEnvs = conf.roleEnvs
-      .toSeq
+    val driverCustomEnvs = conf.roleEnvs.toSeq
       .map { env =>
         new EnvVarBuilder()
           .withName(env._1)
@@ -73,57 +76,59 @@ private[spark] class BasicDriverFeatureStep(
       ("cpu", new QuantityBuilder(false).withAmount(limitCores).build())
     }
 
-    val driverPort = conf.sparkConf.getInt("spark.driver.port", DEFAULT_DRIVER_PORT)
-    val driverBlockManagerPort = conf.sparkConf.getInt(
-      DRIVER_BLOCK_MANAGER_PORT.key,
-      DEFAULT_BLOCKMANAGER_PORT
-    )
+    val driverPort =
+      conf.sparkConf.getInt("spark.driver.port", DEFAULT_DRIVER_PORT)
+    val driverBlockManagerPort = conf.sparkConf
+      .getInt(DRIVER_BLOCK_MANAGER_PORT.key, DEFAULT_BLOCKMANAGER_PORT)
     val driverUIPort = SparkUI.getUIPort(conf.sparkConf)
     val driverContainer = new ContainerBuilder(pod.container)
       .withName(DRIVER_CONTAINER_NAME)
       .withImage(driverContainerImage)
       .withImagePullPolicy(conf.imagePullPolicy())
       .addNewPort()
-        .withName(DRIVER_PORT_NAME)
-        .withContainerPort(driverPort)
-        .withProtocol("TCP")
-        .endPort()
+      .withName(DRIVER_PORT_NAME)
+      .withContainerPort(driverPort)
+      .withProtocol("TCP")
+      .endPort()
       .addNewPort()
-        .withName(BLOCK_MANAGER_PORT_NAME)
-        .withContainerPort(driverBlockManagerPort)
-        .withProtocol("TCP")
-        .endPort()
+      .withName(BLOCK_MANAGER_PORT_NAME)
+      .withContainerPort(driverBlockManagerPort)
+      .withProtocol("TCP")
+      .endPort()
       .addNewPort()
-        .withName(UI_PORT_NAME)
-        .withContainerPort(driverUIPort)
-        .withProtocol("TCP")
-        .endPort()
+      .withName(UI_PORT_NAME)
+      .withContainerPort(driverUIPort)
+      .withProtocol("TCP")
+      .endPort()
       .addAllToEnv(driverCustomEnvs.asJava)
       .addNewEnv()
-        .withName(ENV_DRIVER_BIND_ADDRESS)
-        .withValueFrom(new EnvVarSourceBuilder()
+      .withName(ENV_DRIVER_BIND_ADDRESS)
+      .withValueFrom(
+        new EnvVarSourceBuilder()
           .withNewFieldRef("v1", "status.podIP")
-          .build())
-        .endEnv()
+          .build()
+      )
+      .endEnv()
       .withNewResources()
-        .addToRequests("cpu", driverCpuQuantity)
-        .addToLimits(maybeCpuLimitQuantity.toMap.asJava)
-        .addToRequests("memory", driverMemoryQuantity)
-        .addToLimits("memory", driverMemoryQuantity)
-        .endResources()
+      .addToRequests("cpu", driverCpuQuantity)
+      .addToLimits(maybeCpuLimitQuantity.toMap.asJava)
+      .addToRequests("memory", driverMemoryQuantity)
+      .addToLimits("memory", driverMemoryQuantity)
+      .endResources()
       .build()
 
     val driverPod = new PodBuilder(pod.pod)
       .editOrNewMetadata()
-        .withName(driverPodName)
-        .addToLabels(conf.roleLabels.asJava)
-        .addToAnnotations(conf.roleAnnotations.asJava)
-        .endMetadata()
+      .withName(driverPodName)
+      .addToLabels(conf.roleLabels.asJava)
+      .addToAnnotations(conf.roleAnnotations.asJava)
+      .endMetadata()
       .withNewSpec()
-        .withRestartPolicy("Never")
-        .withNodeSelector(conf.nodeSelector().asJava)
-        .addToImagePullSecrets(conf.imagePullSecrets(): _*)
-        .endSpec()
+      .withRestartPolicy("Never")
+      .withNodeSelector(conf.nodeSelector().asJava)
+      .addToTolerations(conf.driverTolerations: _*)
+      .addToImagePullSecrets(conf.imagePullSecrets(): _*)
+      .endSpec()
       .build()
 
     SparkPod(driverPod, driverContainer)
@@ -134,12 +139,13 @@ private[spark] class BasicDriverFeatureStep(
       KUBERNETES_DRIVER_POD_NAME.key -> driverPodName,
       "spark.app.id" -> conf.appId,
       KUBERNETES_EXECUTOR_POD_NAME_PREFIX.key -> conf.appResourceNamePrefix,
-      KUBERNETES_DRIVER_SUBMIT_CHECK.key -> "true")
+      KUBERNETES_DRIVER_SUBMIT_CHECK.key -> "true"
+    )
 
-    val resolvedSparkJars = KubernetesUtils.resolveFileUrisAndPath(
-      conf.sparkJars())
-    val resolvedSparkFiles = KubernetesUtils.resolveFileUrisAndPath(
-      conf.sparkFiles)
+    val resolvedSparkJars =
+      KubernetesUtils.resolveFileUrisAndPath(conf.sparkJars())
+    val resolvedSparkFiles =
+      KubernetesUtils.resolveFileUrisAndPath(conf.sparkFiles)
     if (resolvedSparkJars.nonEmpty) {
       additionalProps.put("spark.jars", resolvedSparkJars.mkString(","))
     }
