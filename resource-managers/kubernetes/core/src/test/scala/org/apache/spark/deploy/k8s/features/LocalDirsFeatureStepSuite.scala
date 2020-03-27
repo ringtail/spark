@@ -16,28 +16,34 @@
  */
 package org.apache.spark.deploy.k8s.features
 
-import io.fabric8.kubernetes.api.model.{EnvVarBuilder, VolumeBuilder, VolumeMountBuilder}
+import io.fabric8.kubernetes.api.model.{
+  EnvVarBuilder,
+  Toleration,
+  VolumeBuilder,
+  VolumeMountBuilder
+}
 import org.mockito.Mockito
 import org.scalatest.BeforeAndAfter
-
 import org.apache.spark.{SparkConf, SparkFunSuite}
-import org.apache.spark.deploy.k8s.{KubernetesConf, KubernetesDriverSpecificConf, KubernetesRoleSpecificConf, SparkPod}
+import org.apache.spark.deploy.k8s.{
+  KubernetesConf,
+  KubernetesDriverSpecificConf,
+  KubernetesRoleSpecificConf,
+  SparkPod
+}
 
 class LocalDirsFeatureStepSuite extends SparkFunSuite with BeforeAndAfter {
   private val defaultLocalDir = "/var/data/default-local-dir"
   private var sparkConf: SparkConf = _
-  private var kubernetesConf: KubernetesConf[_ <: KubernetesRoleSpecificConf] = _
+  private var kubernetesConf: KubernetesConf[_ <: KubernetesRoleSpecificConf] =
+    _
 
   before {
     val realSparkConf = new SparkConf(false)
     sparkConf = Mockito.spy(realSparkConf)
     kubernetesConf = KubernetesConf(
       sparkConf,
-      KubernetesDriverSpecificConf(
-        None,
-        "app-name",
-        "main",
-        Seq.empty),
+      KubernetesDriverSpecificConf(None, "app-name", "main", Seq.empty),
       "resource",
       "app-id",
       Map.empty,
@@ -46,69 +52,92 @@ class LocalDirsFeatureStepSuite extends SparkFunSuite with BeforeAndAfter {
       Map.empty,
       Map.empty,
       Nil,
-      Seq.empty[String])
+      Seq.empty[Toleration],
+      Seq.empty[Toleration],
+      Seq.empty[String]
+    )
   }
 
   test("Resolve to default local dir if neither env nor configuration are set") {
     Mockito.doReturn(null).when(sparkConf).get("spark.local.dir")
     Mockito.doReturn(null).when(sparkConf).getenv("SPARK_LOCAL_DIRS")
-    val stepUnderTest = new LocalDirsFeatureStep(kubernetesConf, defaultLocalDir)
+    val stepUnderTest =
+      new LocalDirsFeatureStep(kubernetesConf, defaultLocalDir)
     val configuredPod = stepUnderTest.configurePod(SparkPod.initialPod())
     assert(configuredPod.pod.getSpec.getVolumes.size === 1)
-    assert(configuredPod.pod.getSpec.getVolumes.get(0) ===
-      new VolumeBuilder()
-        .withName(s"spark-local-dir-1")
-        .withNewEmptyDir()
-        .endEmptyDir()
-        .build())
+    assert(
+      configuredPod.pod.getSpec.getVolumes.get(0) ===
+        new VolumeBuilder()
+          .withName(s"spark-local-dir-1")
+          .withNewEmptyDir()
+          .endEmptyDir()
+          .build()
+    )
     assert(configuredPod.container.getVolumeMounts.size === 1)
-    assert(configuredPod.container.getVolumeMounts.get(0) ===
-      new VolumeMountBuilder()
-        .withName(s"spark-local-dir-1")
-        .withMountPath(defaultLocalDir)
-        .build())
+    assert(
+      configuredPod.container.getVolumeMounts.get(0) ===
+        new VolumeMountBuilder()
+          .withName(s"spark-local-dir-1")
+          .withMountPath(defaultLocalDir)
+          .build()
+    )
     assert(configuredPod.container.getEnv.size === 1)
-    assert(configuredPod.container.getEnv.get(0) ===
-      new EnvVarBuilder()
-        .withName("SPARK_LOCAL_DIRS")
-        .withValue(defaultLocalDir)
-        .build())
+    assert(
+      configuredPod.container.getEnv.get(0) ===
+        new EnvVarBuilder()
+          .withName("SPARK_LOCAL_DIRS")
+          .withValue(defaultLocalDir)
+          .build()
+    )
   }
 
   test("Use configured local dirs split on comma if provided.") {
-    Mockito.doReturn("/var/data/my-local-dir-1,/var/data/my-local-dir-2")
-      .when(sparkConf).getenv("SPARK_LOCAL_DIRS")
-    val stepUnderTest = new LocalDirsFeatureStep(kubernetesConf, defaultLocalDir)
+    Mockito
+      .doReturn("/var/data/my-local-dir-1,/var/data/my-local-dir-2")
+      .when(sparkConf)
+      .getenv("SPARK_LOCAL_DIRS")
+    val stepUnderTest =
+      new LocalDirsFeatureStep(kubernetesConf, defaultLocalDir)
     val configuredPod = stepUnderTest.configurePod(SparkPod.initialPod())
     assert(configuredPod.pod.getSpec.getVolumes.size === 2)
-    assert(configuredPod.pod.getSpec.getVolumes.get(0) ===
-      new VolumeBuilder()
-        .withName(s"spark-local-dir-1")
-        .withNewEmptyDir()
-        .endEmptyDir()
-        .build())
-    assert(configuredPod.pod.getSpec.getVolumes.get(1) ===
-      new VolumeBuilder()
-        .withName(s"spark-local-dir-2")
-        .withNewEmptyDir()
-        .endEmptyDir()
-        .build())
+    assert(
+      configuredPod.pod.getSpec.getVolumes.get(0) ===
+        new VolumeBuilder()
+          .withName(s"spark-local-dir-1")
+          .withNewEmptyDir()
+          .endEmptyDir()
+          .build()
+    )
+    assert(
+      configuredPod.pod.getSpec.getVolumes.get(1) ===
+        new VolumeBuilder()
+          .withName(s"spark-local-dir-2")
+          .withNewEmptyDir()
+          .endEmptyDir()
+          .build()
+    )
     assert(configuredPod.container.getVolumeMounts.size === 2)
-    assert(configuredPod.container.getVolumeMounts.get(0) ===
-      new VolumeMountBuilder()
-        .withName(s"spark-local-dir-1")
-        .withMountPath("/var/data/my-local-dir-1")
-        .build())
-    assert(configuredPod.container.getVolumeMounts.get(1) ===
-      new VolumeMountBuilder()
-        .withName(s"spark-local-dir-2")
-        .withMountPath("/var/data/my-local-dir-2")
-        .build())
+    assert(
+      configuredPod.container.getVolumeMounts.get(0) ===
+        new VolumeMountBuilder()
+          .withName(s"spark-local-dir-1")
+          .withMountPath("/var/data/my-local-dir-1")
+          .build()
+    )
+    assert(
+      configuredPod.container.getVolumeMounts.get(1) ===
+        new VolumeMountBuilder()
+          .withName(s"spark-local-dir-2")
+          .withMountPath("/var/data/my-local-dir-2")
+          .build()
+    )
     assert(configuredPod.container.getEnv.size === 1)
-    assert(configuredPod.container.getEnv.get(0) ===
-      new EnvVarBuilder()
-        .withName("SPARK_LOCAL_DIRS")
-        .withValue("/var/data/my-local-dir-1,/var/data/my-local-dir-2")
-        .build())
+    assert(
+      configuredPod.container.getEnv.get(0) ===
+        new EnvVarBuilder()
+          .withName("SPARK_LOCAL_DIRS")
+          .withValue("/var/data/my-local-dir-1,/var/data/my-local-dir-2")
+          .build()
+    )
   }
 }

@@ -16,10 +16,14 @@
  */
 package org.apache.spark.deploy.k8s.features
 
-import io.fabric8.kubernetes.api.model.PodBuilder
-
+import io.fabric8.kubernetes.api.model.{PodBuilder, Toleration}
 import org.apache.spark.{SparkConf, SparkFunSuite}
-import org.apache.spark.deploy.k8s.{KubernetesConf, KubernetesExecutorSpecificConf, SecretVolumeUtils, SparkPod}
+import org.apache.spark.deploy.k8s.{
+  KubernetesConf,
+  KubernetesExecutorSpecificConf,
+  SecretVolumeUtils,
+  SparkPod
+}
 
 class MountSecretsFeatureStepSuite extends SparkFunSuite {
 
@@ -29,9 +33,8 @@ class MountSecretsFeatureStepSuite extends SparkFunSuite {
 
   test("mounts all given secrets") {
     val baseDriverPod = SparkPod.initialPod()
-    val secretNamesToMountPaths = Map(
-      SECRET_FOO -> SECRET_MOUNT_PATH,
-      SECRET_BAR -> SECRET_MOUNT_PATH)
+    val secretNamesToMountPaths =
+      Map(SECRET_FOO -> SECRET_MOUNT_PATH, SECRET_BAR -> SECRET_MOUNT_PATH)
     val sparkConf = new SparkConf(false)
     val kubernetesConf = KubernetesConf(
       sparkConf,
@@ -44,18 +47,29 @@ class MountSecretsFeatureStepSuite extends SparkFunSuite {
       Map.empty,
       Map.empty,
       Nil,
-      Seq.empty[String])
+      Seq.empty[Toleration],
+      Seq.empty[Toleration],
+      Seq.empty[String]
+    )
 
     val step = new MountSecretsFeatureStep(kubernetesConf)
     val driverPodWithSecretsMounted = step.configurePod(baseDriverPod).pod
-    val driverContainerWithSecretsMounted = step.configurePod(baseDriverPod).container
+    val driverContainerWithSecretsMounted =
+      step.configurePod(baseDriverPod).container
 
     Seq(s"$SECRET_FOO-volume", s"$SECRET_BAR-volume").foreach { volumeName =>
-      assert(SecretVolumeUtils.podHasVolume(driverPodWithSecretsMounted, volumeName))
+      assert(
+        SecretVolumeUtils.podHasVolume(driverPodWithSecretsMounted, volumeName)
+      )
     }
     Seq(s"$SECRET_FOO-volume", s"$SECRET_BAR-volume").foreach { volumeName =>
-      assert(SecretVolumeUtils.containerHasVolume(
-        driverContainerWithSecretsMounted, volumeName, SECRET_MOUNT_PATH))
+      assert(
+        SecretVolumeUtils.containerHasVolume(
+          driverContainerWithSecretsMounted,
+          volumeName,
+          SECRET_MOUNT_PATH
+        )
+      )
     }
   }
 }

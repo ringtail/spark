@@ -20,18 +20,30 @@ import java.io.File
 
 import com.google.common.base.Charsets
 import com.google.common.io.{BaseEncoding, Files}
-import io.fabric8.kubernetes.api.model.{ContainerBuilder, HasMetadata, PodBuilder, Secret}
+import io.fabric8.kubernetes.api.model.{
+  ContainerBuilder,
+  HasMetadata,
+  PodBuilder,
+  Secret,
+  Toleration
+}
 import org.mockito.{Mock, MockitoAnnotations}
 import org.scalatest.BeforeAndAfter
-import scala.collection.JavaConverters._
 
+import scala.collection.JavaConverters._
 import org.apache.spark.{SparkConf, SparkFunSuite}
-import org.apache.spark.deploy.k8s.{KubernetesConf, KubernetesDriverSpecificConf, SparkPod}
+import org.apache.spark.deploy.k8s.{
+  KubernetesConf,
+  KubernetesDriverSpecificConf,
+  SparkPod
+}
 import org.apache.spark.deploy.k8s.Config._
 import org.apache.spark.deploy.k8s.Constants._
 import org.apache.spark.util.Utils
 
-class DriverKubernetesCredentialsFeatureStepSuite extends SparkFunSuite with BeforeAndAfter {
+class DriverKubernetesCredentialsFeatureStepSuite
+    extends SparkFunSuite
+    with BeforeAndAfter {
 
   private val KUBERNETES_RESOURCE_NAME_PREFIX = "spark"
   private val APP_ID = "k8s-app"
@@ -62,9 +74,16 @@ class DriverKubernetesCredentialsFeatureStepSuite extends SparkFunSuite with Bef
       Map.empty,
       Map.empty,
       Nil,
-      Seq.empty[String])
-    val kubernetesCredentialsStep = new DriverKubernetesCredentialsFeatureStep(kubernetesConf)
-    assert(kubernetesCredentialsStep.configurePod(BASE_DRIVER_POD) === BASE_DRIVER_POD)
+      Seq.empty[Toleration],
+      Seq.empty[Toleration],
+      Seq.empty[String]
+    )
+    val kubernetesCredentialsStep =
+      new DriverKubernetesCredentialsFeatureStep(kubernetesConf)
+    assert(
+      kubernetesCredentialsStep
+        .configurePod(BASE_DRIVER_POD) === BASE_DRIVER_POD
+    )
     assert(kubernetesCredentialsStep.getAdditionalPodSystemProperties().isEmpty)
     assert(kubernetesCredentialsStep.getAdditionalKubernetesResources().isEmpty)
   }
@@ -73,16 +92,20 @@ class DriverKubernetesCredentialsFeatureStepSuite extends SparkFunSuite with Bef
     val submissionSparkConf = new SparkConf(false)
       .set(
         s"$KUBERNETES_AUTH_DRIVER_MOUNTED_CONF_PREFIX.$OAUTH_TOKEN_FILE_CONF_SUFFIX",
-        "/mnt/secrets/my-token.txt")
+        "/mnt/secrets/my-token.txt"
+      )
       .set(
         s"$KUBERNETES_AUTH_DRIVER_MOUNTED_CONF_PREFIX.$CLIENT_KEY_FILE_CONF_SUFFIX",
-        "/mnt/secrets/my-key.pem")
+        "/mnt/secrets/my-key.pem"
+      )
       .set(
         s"$KUBERNETES_AUTH_DRIVER_MOUNTED_CONF_PREFIX.$CLIENT_CERT_FILE_CONF_SUFFIX",
-        "/mnt/secrets/my-cert.pem")
+        "/mnt/secrets/my-cert.pem"
+      )
       .set(
         s"$KUBERNETES_AUTH_DRIVER_MOUNTED_CONF_PREFIX.$CA_CERT_FILE_CONF_SUFFIX",
-        "/mnt/secrets/my-ca.pem")
+        "/mnt/secrets/my-ca.pem"
+      )
     val kubernetesConf = KubernetesConf(
       submissionSparkConf,
       driverSpecificConf,
@@ -94,14 +117,23 @@ class DriverKubernetesCredentialsFeatureStepSuite extends SparkFunSuite with Bef
       Map.empty,
       Map.empty,
       Nil,
-      Seq.empty[String])
+      Seq.empty[Toleration],
+      Seq.empty[Toleration],
+      Seq.empty[String]
+    )
 
-    val kubernetesCredentialsStep = new DriverKubernetesCredentialsFeatureStep(kubernetesConf)
-    assert(kubernetesCredentialsStep.configurePod(BASE_DRIVER_POD) === BASE_DRIVER_POD)
+    val kubernetesCredentialsStep =
+      new DriverKubernetesCredentialsFeatureStep(kubernetesConf)
+    assert(
+      kubernetesCredentialsStep
+        .configurePod(BASE_DRIVER_POD) === BASE_DRIVER_POD
+    )
     assert(kubernetesCredentialsStep.getAdditionalKubernetesResources().isEmpty)
-    val resolvedProperties = kubernetesCredentialsStep.getAdditionalPodSystemProperties()
-    resolvedProperties.foreach { case (propKey, propValue) =>
-      assert(submissionSparkConf.get(propKey) === propValue)
+    val resolvedProperties =
+      kubernetesCredentialsStep.getAdditionalPodSystemProperties()
+    resolvedProperties.foreach {
+      case (propKey, propValue) =>
+        assert(submissionSparkConf.get(propKey) === propValue)
     }
   }
 
@@ -112,16 +144,20 @@ class DriverKubernetesCredentialsFeatureStepSuite extends SparkFunSuite with Bef
     val submissionSparkConf = new SparkConf(false)
       .set(
         s"$KUBERNETES_AUTH_DRIVER_CONF_PREFIX.$OAUTH_TOKEN_CONF_SUFFIX",
-        "token")
+        "token"
+      )
       .set(
         s"$KUBERNETES_AUTH_DRIVER_CONF_PREFIX.$CLIENT_KEY_FILE_CONF_SUFFIX",
-        clientKeyFile.getAbsolutePath)
+        clientKeyFile.getAbsolutePath
+      )
       .set(
         s"$KUBERNETES_AUTH_DRIVER_CONF_PREFIX.$CLIENT_CERT_FILE_CONF_SUFFIX",
-        clientCertFile.getAbsolutePath)
+        clientCertFile.getAbsolutePath
+      )
       .set(
         s"$KUBERNETES_AUTH_DRIVER_CONF_PREFIX.$CA_CERT_FILE_CONF_SUFFIX",
-        caCertFile.getAbsolutePath)
+        caCertFile.getAbsolutePath
+      )
     val kubernetesConf = KubernetesConf(
       submissionSparkConf,
       driverSpecificConf,
@@ -133,9 +169,14 @@ class DriverKubernetesCredentialsFeatureStepSuite extends SparkFunSuite with Bef
       Map.empty,
       Map.empty,
       Nil,
-      Seq.empty[String])
-    val kubernetesCredentialsStep = new DriverKubernetesCredentialsFeatureStep(kubernetesConf)
-    val resolvedProperties = kubernetesCredentialsStep.getAdditionalPodSystemProperties()
+      Seq.empty[Toleration],
+      Seq.empty[Toleration],
+      Seq.empty[String]
+    )
+    val kubernetesCredentialsStep =
+      new DriverKubernetesCredentialsFeatureStep(kubernetesConf)
+    val resolvedProperties =
+      kubernetesCredentialsStep.getAdditionalPodSystemProperties()
     val expectedSparkConf = Map(
       s"$KUBERNETES_AUTH_DRIVER_CONF_PREFIX.$OAUTH_TOKEN_CONF_SUFFIX" -> "<present_but_redacted>",
       s"$KUBERNETES_AUTH_DRIVER_MOUNTED_CONF_PREFIX.$OAUTH_TOKEN_FILE_CONF_SUFFIX" ->
@@ -145,38 +186,57 @@ class DriverKubernetesCredentialsFeatureStepSuite extends SparkFunSuite with Bef
       s"$KUBERNETES_AUTH_DRIVER_MOUNTED_CONF_PREFIX.$CLIENT_CERT_FILE_CONF_SUFFIX" ->
         DRIVER_CREDENTIALS_CLIENT_CERT_PATH,
       s"$KUBERNETES_AUTH_DRIVER_MOUNTED_CONF_PREFIX.$CA_CERT_FILE_CONF_SUFFIX" ->
-        DRIVER_CREDENTIALS_CA_CERT_PATH)
+        DRIVER_CREDENTIALS_CA_CERT_PATH
+    )
     assert(resolvedProperties === expectedSparkConf)
-    assert(kubernetesCredentialsStep.getAdditionalKubernetesResources().size === 1)
+    assert(
+      kubernetesCredentialsStep.getAdditionalKubernetesResources().size === 1
+    )
     val credentialsSecret = kubernetesCredentialsStep
       .getAdditionalKubernetesResources()
       .head
       .asInstanceOf[Secret]
-    assert(credentialsSecret.getMetadata.getName ===
-      s"$KUBERNETES_RESOURCE_NAME_PREFIX-kubernetes-credentials")
+    assert(
+      credentialsSecret.getMetadata.getName ===
+        s"$KUBERNETES_RESOURCE_NAME_PREFIX-kubernetes-credentials"
+    )
     val decodedSecretData = credentialsSecret.getData.asScala.map { data =>
-      (data._1, new String(BaseEncoding.base64().decode(data._2), Charsets.UTF_8))
+      (
+        data._1,
+        new String(BaseEncoding.base64().decode(data._2), Charsets.UTF_8)
+      )
     }
     val expectedSecretData = Map(
       DRIVER_CREDENTIALS_CA_CERT_SECRET_NAME -> "ca-cert",
       DRIVER_CREDENTIALS_OAUTH_TOKEN_SECRET_NAME -> "token",
       DRIVER_CREDENTIALS_CLIENT_KEY_SECRET_NAME -> "key",
-      DRIVER_CREDENTIALS_CLIENT_CERT_SECRET_NAME -> "cert")
+      DRIVER_CREDENTIALS_CLIENT_CERT_SECRET_NAME -> "cert"
+    )
     assert(decodedSecretData === expectedSecretData)
     val driverPod = kubernetesCredentialsStep.configurePod(BASE_DRIVER_POD)
     val driverPodVolumes = driverPod.pod.getSpec.getVolumes.asScala
     assert(driverPodVolumes.size === 1)
-    assert(driverPodVolumes.head.getName === DRIVER_CREDENTIALS_SECRET_VOLUME_NAME)
+    assert(
+      driverPodVolumes.head.getName === DRIVER_CREDENTIALS_SECRET_VOLUME_NAME
+    )
     assert(driverPodVolumes.head.getSecret != null)
-    assert(driverPodVolumes.head.getSecret.getSecretName === credentialsSecret.getMetadata.getName)
+    assert(
+      driverPodVolumes.head.getSecret.getSecretName === credentialsSecret.getMetadata.getName
+    )
     val driverContainerVolumeMount = driverPod.container.getVolumeMounts.asScala
     assert(driverContainerVolumeMount.size === 1)
-    assert(driverContainerVolumeMount.head.getName === DRIVER_CREDENTIALS_SECRET_VOLUME_NAME)
-    assert(driverContainerVolumeMount.head.getMountPath === DRIVER_CREDENTIALS_SECRETS_BASE_DIR)
+    assert(
+      driverContainerVolumeMount.head.getName === DRIVER_CREDENTIALS_SECRET_VOLUME_NAME
+    )
+    assert(
+      driverContainerVolumeMount.head.getMountPath === DRIVER_CREDENTIALS_SECRETS_BASE_DIR
+    )
   }
 
-  private def writeCredentials(credentialsFileName: String, credentialsContents: String): File = {
-    val credentialsFile = new File(credentialsTempDirectory, credentialsFileName)
+  private def writeCredentials(credentialsFileName: String,
+                               credentialsContents: String): File = {
+    val credentialsFile =
+      new File(credentialsTempDirectory, credentialsFileName)
     Files.write(credentialsContents, credentialsFile, Charsets.UTF_8)
     credentialsFile
   }
