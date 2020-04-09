@@ -5,5 +5,6 @@ ENV MAVEN_OPTS="-Xmx2g -XX:ReservedCodeCacheSize=1g"
 RUN mvn clean package
 
 
-FROM registry.aliyuncs.com/acs/spark:ack-2.4.5-latest
+ARG base_img=registry.aliyuncs.com/acs/spark:ack-2.4.5-latest
+FROM $base_img
 COPY --from=build-env /spark/examples/target/*.jar  /opt/spark/examples/
