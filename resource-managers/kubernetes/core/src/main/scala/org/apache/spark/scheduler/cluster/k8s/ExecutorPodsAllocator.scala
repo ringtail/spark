@@ -30,12 +30,12 @@ import org.apache.spark.{SparkConf, SparkException}
 import scala.collection.mutable
 
 private[spark] class ExecutorPodsAllocator(
-  conf: SparkConf,
-  executorBuilder: KubernetesExecutorBuilder,
-  kubernetesClient: KubernetesClient,
-  snapshotsStore: ExecutorPodsSnapshotsStore,
-  clock: Clock
-) extends Logging {
+                                            conf: SparkConf,
+                                            executorBuilder: KubernetesExecutorBuilder,
+                                            kubernetesClient: KubernetesClient,
+                                            snapshotsStore: ExecutorPodsSnapshotsStore,
+                                            clock: Clock
+                                          ) extends Logging {
 
   private val EXECUTOR_ID_COUNTER = new AtomicLong(0L)
 
@@ -46,6 +46,8 @@ private[spark] class ExecutorPodsAllocator(
   private val podAllocationDelay = conf.get(KUBERNETES_ALLOCATION_BATCH_DELAY)
 
   private val podCreationTimeout = math.max(podAllocationDelay * 5, 60000)
+
+  private val minRegisteredExecutorsInBatch = new AtomicInteger(0)
 
   private val namespace = conf.get(KUBERNETES_NAMESPACE)
 
@@ -65,7 +67,7 @@ private[spark] class ExecutorPodsAllocator(
             s"No pod was found named $kubernetesDriverPodName in the cluster in the " +
               s"namespace $namespace (this was supposed to be the driver pod.)."
           )
-      )
+        )
     )
 
   // Executor IDs that have been requested from Kubernetes but have not been detected in any
@@ -80,6 +82,10 @@ private[spark] class ExecutorPodsAllocator(
 
   def setTotalExpectedExecutors(total: Int): Unit =
     totalExpectedExecutors.set(total)
+
+
+  def setMinRegisteredExecutorsInBatch(ratio: Int): Unit =
+    minRegisteredExecutorsInBatch.set(ratio)
 
   private def onNewSnapshots(applicationId: String,
                              snapshots: Seq[ExecutorPodsSnapshot]): Unit = {
@@ -123,11 +129,11 @@ private[spark] class ExecutorPodsAllocator(
       val latestSnapshot = snapshots.last
       val currentRunningExecutors = latestSnapshot.executorPods.values.count {
         case PodRunning(_) => true
-        case _             => false
+        case _ => false
       }
       val currentPendingExecutors = latestSnapshot.executorPods.values.count {
         case PodPending(_) => true
-        case _             => false
+        case _ => false
       }
       val currentTotalExpectedExecutors = totalExpectedExecutors.get
       logDebug(
@@ -136,8 +142,8 @@ private[spark] class ExecutorPodsAllocator(
           s" have been requested but are pending appearance in the cluster."
       )
       if (newlyCreatedExecutors.isEmpty
-          && currentPendingExecutors == 0
-          && currentRunningExecutors < currentTotalExpectedExecutors) {
+        && currentPendingExecutors <= (podAllocationSize - minRegisteredExecutorsInBatch.get())
+        && currentRunningExecutors + currentPendingExecutors < currentTotalExpectedExecutors) {
         val numExecutorsToAllocate = math.min(
           currentTotalExpectedExecutors - currentRunningExecutors,
           podAllocationSize
