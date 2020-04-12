@@ -29,8 +29,8 @@ import org.apache.spark.util.Utils
 import scala.collection.JavaConverters._
 
 private[spark] class BasicExecutorFeatureStep(
-  kubernetesConf: KubernetesConf[KubernetesExecutorSpecificConf]
-) extends KubernetesFeatureConfigStep {
+                                               kubernetesConf: KubernetesConf[KubernetesExecutorSpecificConf]
+                                             ) extends KubernetesFeatureConfigStep {
 
   // Consider moving some of these fields to KubernetesConf or KubernetesExecutorSpecificConf
   private val executorExtraClasspath = kubernetesConf.get(EXECUTOR_CLASS_PATH)
@@ -87,6 +87,8 @@ private[spark] class BasicExecutorFeatureStep(
     }
   private val executorLimitCores =
     kubernetesConf.get(KUBERNETES_EXECUTOR_LIMIT_CORES)
+
+  private val executorNodeName = kubernetesConf.get(KUBERNETES_EXECUTOR_NODE_NAME)
 
   override def configurePod(pod: SparkPod): SparkPod = {
     val name =
@@ -207,6 +209,7 @@ private[spark] class BasicExecutorFeatureStep(
       .editOrNewSpec()
       .withHostname(hostname)
       .withRestartPolicy("Never")
+      .withNodeName(executorNodeName.toString)
       .withNodeSelector(kubernetesConf.nodeSelector().asJava)
       .addToImagePullSecrets(kubernetesConf.imagePullSecrets(): _*)
       .addToTolerations(kubernetesConf.executorTolerations: _*)

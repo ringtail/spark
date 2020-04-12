@@ -28,8 +28,8 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 private[spark] class BasicDriverFeatureStep(
-  conf: KubernetesConf[KubernetesDriverSpecificConf]
-) extends KubernetesFeatureConfigStep {
+                                             conf: KubernetesConf[KubernetesDriverSpecificConf]
+                                           ) extends KubernetesFeatureConfigStep {
 
   private val driverPodName = conf
     .get(KUBERNETES_DRIVER_POD_NAME)
@@ -44,6 +44,9 @@ private[spark] class BasicDriverFeatureStep(
   // CPU settings
   private val driverCpuCores = conf.get("spark.driver.cores", "1")
   private val driverLimitCores = conf.get(KUBERNETES_DRIVER_LIMIT_CORES)
+
+  // node name of driver
+  private val driverNodeName = conf.get(KUBERNETES_DRIVER_NODE_NAME)
 
   // Memory settings
   private val driverMemoryMiB = conf.get(DRIVER_MEMORY)
@@ -126,6 +129,7 @@ private[spark] class BasicDriverFeatureStep(
       .withNewSpec()
       .withRestartPolicy("Never")
       .withNodeSelector(conf.nodeSelector().asJava)
+      .withNodeName(driverNodeName.toString)
       .addToTolerations(conf.driverTolerations: _*)
       .addToImagePullSecrets(conf.imagePullSecrets(): _*)
       .endSpec()

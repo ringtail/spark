@@ -62,9 +62,9 @@ private[spark] object Config extends Logging {
       .createOptional
 
   val KUBERNETES_AUTH_DRIVER_CONF_PREFIX =
-      "spark.kubernetes.authenticate.driver"
+    "spark.kubernetes.authenticate.driver"
   val KUBERNETES_AUTH_DRIVER_MOUNTED_CONF_PREFIX =
-      "spark.kubernetes.authenticate.driver.mounted"
+    "spark.kubernetes.authenticate.driver.mounted"
   val KUBERNETES_AUTH_CLIENT_MODE_PREFIX = "spark.kubernetes.authenticate"
   val OAUTH_TOKEN_CONF_SUFFIX = "oauthToken"
   val OAUTH_TOKEN_FILE_CONF_SUFFIX = "oauthTokenFile"
@@ -89,9 +89,9 @@ private[spark] object Config extends Logging {
 
   val KUBERNETES_DRIVER_SUBMIT_CHECK =
     ConfigBuilder("spark.kubernetes.submitInDriver")
-    .internal()
-    .booleanConf
-    .createWithDefault(false)
+      .internal()
+      .booleanConf
+      .createWithDefault(false)
 
   val KUBERNETES_EXECUTOR_LIMIT_CORES =
     ConfigBuilder("spark.kubernetes.executor.limit.cores")
@@ -229,6 +229,18 @@ private[spark] object Config extends Logging {
     ConfigBuilder("spark.kubernetes.resource.type")
       .doc("This sets the resource type internally")
       .internal()
+      .stringConf
+      .createOptional
+
+  val KUBERNETES_DRIVER_NODE_NAME =
+    ConfigBuilder("spark.kubernetes.driver.node.name")
+      .doc("Name of the node of driver pod running on.")
+      .stringConf
+      .createOptional
+
+  val KUBERNETES_EXECUTOR_NODE_NAME =
+    ConfigBuilder("spark.kubernetes.driver.node.name")
+      .doc("Name of the node of executor pod running on.")
       .stringConf
       .createOptional
 
