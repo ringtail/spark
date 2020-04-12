@@ -47,7 +47,7 @@ private[spark] class ExecutorPodsAllocator(
 
   private val podCreationTimeout = math.max(podAllocationDelay * 5, 60000)
 
-  private val minRegisteredExecutorsInBatch = new AtomicInteger(0)
+  private var minRegisteredExecutorsRatio = 0.8
 
   private val namespace = conf.get(KUBERNETES_NAMESPACE)
 
@@ -83,9 +83,8 @@ private[spark] class ExecutorPodsAllocator(
   def setTotalExpectedExecutors(total: Int): Unit =
     totalExpectedExecutors.set(total)
 
-
-  def setMinRegisteredExecutorsInBatch(ratio: Int): Unit =
-    minRegisteredExecutorsInBatch.set(ratio)
+  def setMinRegisteredExecutorsRatio(ratio: Double): Unit =
+    minRegisteredExecutorsRatio = ratio
 
   private def onNewSnapshots(applicationId: String,
                              snapshots: Seq[ExecutorPodsSnapshot]): Unit = {
@@ -135,17 +134,27 @@ private[spark] class ExecutorPodsAllocator(
         case PodPending(_) => true
         case _ => false
       }
+
+      val currentRequestExecutors = latestSnapshot.executorPods.values.count {
+        case PodDeleted(_) => false
+        case _ => true
+      }
+
       val currentTotalExpectedExecutors = totalExpectedExecutors.get
       logDebug(
         s"Currently have $currentRunningExecutors running executors and" +
           s" $currentPendingExecutors pending executors. $newlyCreatedExecutors executors" +
           s" have been requested but are pending appearance in the cluster."
       )
+
+      //      if (newlyCreatedExecutors.isEmpty
+      //        && currentPendingExecutors == 0
+      //        && currentRunningExecutors < currentTotalExpectedExecutors) {
       if (newlyCreatedExecutors.isEmpty
-        && currentPendingExecutors <= (podAllocationSize - minRegisteredExecutorsInBatch.get())
-        && currentRunningExecutors + currentPendingExecutors < currentTotalExpectedExecutors) {
+        && currentRunningExecutors >= currentRequestExecutors * minRegisteredExecutorsRatio
+        && currentRequestExecutors < totalExpectedExecutors.get()) {
         val numExecutorsToAllocate = math.min(
-          currentTotalExpectedExecutors - currentRunningExecutors,
+          currentTotalExpectedExecutors - currentRequestExecutors,
           podAllocationSize
         )
         logInfo(
