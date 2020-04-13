@@ -74,7 +74,7 @@ private[spark] class KubernetesClusterSchedulerBackend(
     super.start()
     if (!Utils.isDynamicAllocationEnabled(conf)) {
       podAllocator.setTotalExpectedExecutors(initialExecutors)
-      podAllocator.setMinRegisteredExecutorsInBatch((podAllocationSize * (1.0 - minRegisteredRatio)).toInt)
+      podAllocator.setMinRegisteredExecutorsRatio(minRegisteredRatio)
     }
     lifecycleEventHandler.start(this)
     podAllocator.start(applicationId())
