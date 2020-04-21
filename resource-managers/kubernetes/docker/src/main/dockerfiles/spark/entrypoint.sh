@@ -17,7 +17,7 @@
 #
 
 # nscd start
-service nscd start &
+service nscd start
 
 # echo commands to the terminal output
 set -ex
