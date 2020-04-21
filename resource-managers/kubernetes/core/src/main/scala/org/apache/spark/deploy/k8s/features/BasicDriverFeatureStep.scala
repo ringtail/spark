@@ -46,7 +46,7 @@ private[spark] class BasicDriverFeatureStep(
   private val driverLimitCores = conf.get(KUBERNETES_DRIVER_LIMIT_CORES)
 
   // node name of driver
-  private val driverNodeName = conf.get(KUBERNETES_DRIVER_NODE_NAME)
+  private val driverNodeName = conf.get(KUBERNETES_DRIVER_NODE_NAME).getOrElse("")
 
   // Memory settings
   private val driverMemoryMiB = conf.get(DRIVER_MEMORY)
