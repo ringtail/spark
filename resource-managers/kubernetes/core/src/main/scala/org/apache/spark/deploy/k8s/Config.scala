@@ -239,7 +239,7 @@ private[spark] object Config extends Logging {
       .createOptional
 
   val KUBERNETES_EXECUTOR_NODE_NAME =
-    ConfigBuilder("spark.kubernetes.driver.node.name")
+    ConfigBuilder("spark.kubernetes.executor.node.name")
       .doc("Name of the node of executor pod running on.")
       .stringConf
       .createOptional
