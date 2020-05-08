@@ -6,5 +6,6 @@ ADD https://repo1.maven.org/maven2/com/aliyun/oss/aliyun-sdk-oss/3.8.1/aliyun-sd
 
 # change default entrypoint
 ADD resource-managers/kubernetes/docker/src/main/dockerfiles/spark/historyserver/entrypoint.sh /opt/entrypoint.sh
+RUN chmod +x /opt/entrypoint.sh
 
 ENTRYPOINT [ "/opt/entrypoint.sh" ]
