@@ -25,4 +25,3 @@ fi
 . "${SPARK_HOME}/bin/load-spark-env.sh"
 
 exec "${SPARK_HOME}/sbin"/spark-daemon.sh start org.apache.spark.deploy.history.HistoryServer 1 "$@"
-
