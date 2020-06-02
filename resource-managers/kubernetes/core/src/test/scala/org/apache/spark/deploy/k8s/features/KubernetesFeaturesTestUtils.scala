@@ -29,10 +29,10 @@ import org.apache.spark.deploy.k8s.SparkPod
 object KubernetesFeaturesTestUtils {
 
   def getMockConfigStepForStepType[T <: KubernetesFeatureConfigStep](
-    stepType: String, stepClass: Class[T]): T = {
+      stepType: String,
+      stepClass: Class[T]): T = {
     val mockStep = mock(stepClass)
-    when(mockStep.getAdditionalKubernetesResources()).thenReturn(
-      getSecretsForStepType(stepType))
+    when(mockStep.getAdditionalKubernetesResources()).thenReturn(getSecretsForStepType(stepType))
 
     when(mockStep.getAdditionalPodSystemProperties())
       .thenReturn(Map(stepType -> stepType))
@@ -51,13 +51,14 @@ object KubernetesFeaturesTestUtils {
     mockStep
   }
 
-  def getSecretsForStepType[T <: KubernetesFeatureConfigStep](stepType: String)
-    : Seq[HasMetadata] = {
-    Seq(new SecretBuilder()
-      .withNewMetadata()
-      .withName(stepType)
-      .endMetadata()
-      .build())
+  def getSecretsForStepType[T <: KubernetesFeatureConfigStep](
+      stepType: String): Seq[HasMetadata] = {
+    Seq(
+      new SecretBuilder()
+        .withNewMetadata()
+        .withName(stepType)
+        .endMetadata()
+        .build())
   }
 
   def containerHasEnvVar(container: Container, envVarName: String): Boolean = {

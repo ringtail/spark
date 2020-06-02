@@ -18,27 +18,28 @@ package org.apache.spark.scheduler.cluster.k8s
 
 import java.util.concurrent.ExecutorService
 
+import scala.concurrent.{ExecutionContext, Future}
+
 import io.fabric8.kubernetes.client.KubernetesClient
+
 import org.apache.spark.deploy.k8s.Config.KUBERNETES_ALLOCATION_BATCH_SIZE
 import org.apache.spark.deploy.k8s.Constants._
 import org.apache.spark.rpc.{RpcAddress, RpcEnv}
-import org.apache.spark.scheduler.cluster.{CoarseGrainedSchedulerBackend, SchedulerBackendUtils}
 import org.apache.spark.scheduler.{ExecutorLossReason, TaskSchedulerImpl}
+import org.apache.spark.scheduler.cluster.{CoarseGrainedSchedulerBackend, SchedulerBackendUtils}
 import org.apache.spark.util.{ThreadUtils, Utils}
 
-import scala.concurrent.{ExecutionContext, Future}
-
 private[spark] class KubernetesClusterSchedulerBackend(
-                                                        scheduler: TaskSchedulerImpl,
-                                                        rpcEnv: RpcEnv,
-                                                        kubernetesClient: KubernetesClient,
-                                                        requestExecutorsService: ExecutorService,
-                                                        snapshotsStore: ExecutorPodsSnapshotsStore,
-                                                        podAllocator: ExecutorPodsAllocator,
-                                                        lifecycleEventHandler: ExecutorPodsLifecycleManager,
-                                                        watchEvents: ExecutorPodsWatchSnapshotSource,
-                                                        pollEvents: ExecutorPodsPollingSnapshotSource)
-  extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) {
+    scheduler: TaskSchedulerImpl,
+    rpcEnv: RpcEnv,
+    kubernetesClient: KubernetesClient,
+    requestExecutorsService: ExecutorService,
+    snapshotsStore: ExecutorPodsSnapshotsStore,
+    podAllocator: ExecutorPodsAllocator,
+    lifecycleEventHandler: ExecutorPodsLifecycleManager,
+    watchEvents: ExecutorPodsWatchSnapshotSource,
+    pollEvents: ExecutorPodsPollingSnapshotSource)
+    extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) {
 
   private val podAllocationSize = conf.get(KUBERNETES_ALLOCATION_BATCH_SIZE)
 
@@ -144,7 +145,7 @@ private[spark] class KubernetesClusterSchedulerBackend(
   }
 
   private class KubernetesDriverEndpoint(rpcEnv: RpcEnv, sparkProperties: Seq[(String, String)])
-    extends DriverEndpoint(rpcEnv, sparkProperties) {
+      extends DriverEndpoint(rpcEnv, sparkProperties) {
 
     override def onDisconnected(rpcAddress: RpcAddress): Unit = {
       // Don't do anything besides disabling the executor - allow the Kubernetes API events to

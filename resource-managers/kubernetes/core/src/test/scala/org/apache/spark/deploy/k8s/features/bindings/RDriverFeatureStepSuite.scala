@@ -16,18 +16,15 @@
  */
 package org.apache.spark.deploy.k8s.features.bindings
 
+import scala.collection.JavaConverters._
+
 import io.fabric8.kubernetes.api.model.Toleration
+
+import org.apache.spark.{SparkConf, SparkFunSuite}
+import org.apache.spark.deploy.k8s.{KubernetesConf, KubernetesDriverSpecificConf, SparkPod}
 import org.apache.spark.deploy.k8s.Config._
 import org.apache.spark.deploy.k8s.Constants._
 import org.apache.spark.deploy.k8s.submit.RMainAppResource
-import org.apache.spark.deploy.k8s.{
-  KubernetesConf,
-  KubernetesDriverSpecificConf,
-  SparkPod
-}
-import org.apache.spark.{SparkConf, SparkFunSuite}
-
-import scala.collection.JavaConverters._
 
 class RDriverFeatureStepSuite extends SparkFunSuite {
 
@@ -43,8 +40,7 @@ class RDriverFeatureStepSuite extends SparkFunSuite {
         Some(RMainAppResource(mainResource)),
         "test-app",
         "r-runner",
-        Seq("5", "7", "9")
-      ),
+        Seq("5", "7", "9")),
       appResourceNamePrefix = "",
       appId = "",
       roleLabels = Map.empty,
@@ -55,8 +51,7 @@ class RDriverFeatureStepSuite extends SparkFunSuite {
       roleVolumes = Seq.empty,
       driverTolerations = Seq.empty[Toleration],
       executorTolerations = Seq.empty[Toleration],
-      sparkFiles = Seq.empty[String]
-    )
+      sparkFiles = Seq.empty[String])
 
     val step = new RDriverFeatureStep(kubernetesConf)
     val driverContainerwithR = step.configurePod(baseDriverPod).container

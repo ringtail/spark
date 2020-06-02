@@ -16,20 +16,20 @@
  */
 package org.apache.spark.deploy.k8s.features
 
-import io.fabric8.kubernetes.api.model._
-import org.apache.spark.SparkException
-import org.apache.spark.deploy.k8s.Config._
-import org.apache.spark.deploy.k8s.Constants._
-import org.apache.spark.deploy.k8s._
-import org.apache.spark.internal.config._
-import org.apache.spark.ui.SparkUI
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-private[spark] class BasicDriverFeatureStep(
-                                             conf: KubernetesConf[KubernetesDriverSpecificConf]
-                                           ) extends KubernetesFeatureConfigStep {
+import io.fabric8.kubernetes.api.model._
+
+import org.apache.spark.SparkException
+import org.apache.spark.deploy.k8s._
+import org.apache.spark.deploy.k8s.Config._
+import org.apache.spark.deploy.k8s.Constants._
+import org.apache.spark.internal.config._
+import org.apache.spark.ui.SparkUI
+
+private[spark] class BasicDriverFeatureStep(conf: KubernetesConf[KubernetesDriverSpecificConf])
+    extends KubernetesFeatureConfigStep {
 
   private val driverPodName = conf
     .get(KUBERNETES_DRIVER_POD_NAME)
@@ -37,27 +37,24 @@ private[spark] class BasicDriverFeatureStep(
 
   private val driverContainerImage = conf
     .get(DRIVER_CONTAINER_IMAGE)
-    .getOrElse(
-      throw new SparkException("Must specify the driver container image")
-    )
+    .getOrElse(throw new SparkException("Must specify the driver container image"))
 
   // CPU settings
   private val driverCpuCores = conf.get("spark.driver.cores", "1")
   private val driverLimitCores = conf.get(KUBERNETES_DRIVER_LIMIT_CORES)
 
   // node name of driver
-  private val driverNodeName = conf.get(KUBERNETES_DRIVER_NODE_NAME).getOrElse("")
+  private val driverNodeName =
+    conf.get(KUBERNETES_DRIVER_NODE_NAME).getOrElse("")
 
   // Memory settings
   private val driverMemoryMiB = conf.get(DRIVER_MEMORY)
+
   private val memoryOverheadMiB = conf
     .get(DRIVER_MEMORY_OVERHEAD)
     .getOrElse(
-      math.max(
-        (conf.get(MEMORY_OVERHEAD_FACTOR) * driverMemoryMiB).toInt,
-        MEMORY_OVERHEAD_MIN_MIB
-      )
-    )
+      math
+        .max((conf.get(MEMORY_OVERHEAD_FACTOR) * driverMemoryMiB).toInt, MEMORY_OVERHEAD_MIN_MIB))
   private val driverMemoryWithOverheadMiB = driverMemoryMiB + memoryOverheadMiB
 
   override def configurePod(pod: SparkPod): SparkPod = {
@@ -106,11 +103,9 @@ private[spark] class BasicDriverFeatureStep(
       .addAllToEnv(driverCustomEnvs.asJava)
       .addNewEnv()
       .withName(ENV_DRIVER_BIND_ADDRESS)
-      .withValueFrom(
-        new EnvVarSourceBuilder()
-          .withNewFieldRef("v1", "status.podIP")
-          .build()
-      )
+      .withValueFrom(new EnvVarSourceBuilder()
+        .withNewFieldRef("v1", "status.podIP")
+        .build())
       .endEnv()
       .withNewResources()
       .addToRequests("cpu", driverCpuQuantity)
@@ -143,8 +138,7 @@ private[spark] class BasicDriverFeatureStep(
       KUBERNETES_DRIVER_POD_NAME.key -> driverPodName,
       "spark.app.id" -> conf.appId,
       KUBERNETES_EXECUTOR_POD_NAME_PREFIX.key -> conf.appResourceNamePrefix,
-      KUBERNETES_DRIVER_SUBMIT_CHECK.key -> "true"
-    )
+      KUBERNETES_DRIVER_SUBMIT_CHECK.key -> "true")
 
     val resolvedSparkJars =
       KubernetesUtils.resolveFileUrisAndPath(conf.sparkJars())

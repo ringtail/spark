@@ -16,17 +16,14 @@
  */
 package org.apache.spark.deploy.k8s.features.bindings
 
+import scala.collection.JavaConverters._
+
 import io.fabric8.kubernetes.api.model.Toleration
+
+import org.apache.spark.{SparkConf, SparkFunSuite}
+import org.apache.spark.deploy.k8s.{KubernetesConf, KubernetesDriverSpecificConf, SparkPod}
 import org.apache.spark.deploy.k8s.Constants._
 import org.apache.spark.deploy.k8s.submit.PythonMainAppResource
-import org.apache.spark.deploy.k8s.{
-  KubernetesConf,
-  KubernetesDriverSpecificConf,
-  SparkPod
-}
-import org.apache.spark.{SparkConf, SparkFunSuite}
-
-import scala.collection.JavaConverters._
 
 class JavaDriverFeatureStepSuite extends SparkFunSuite {
 
@@ -39,8 +36,7 @@ class JavaDriverFeatureStepSuite extends SparkFunSuite {
         Some(PythonMainAppResource("local:///main.jar")),
         "test-class",
         "java-runner",
-        Seq("5 7")
-      ),
+        Seq("5 7")),
       appResourceNamePrefix = "",
       appId = "",
       roleLabels = Map.empty,
@@ -51,8 +47,7 @@ class JavaDriverFeatureStepSuite extends SparkFunSuite {
       roleVolumes = Nil,
       driverTolerations = Seq.empty[Toleration],
       executorTolerations = Seq.empty[Toleration],
-      sparkFiles = Seq.empty[String]
-    )
+      sparkFiles = Seq.empty[String])
 
     val step = new JavaDriverFeatureStep(kubernetesConf)
     val driverPod = step.configurePod(baseDriverPod).pod
@@ -67,8 +62,6 @@ class JavaDriverFeatureStepSuite extends SparkFunSuite {
         "--class",
         "test-class",
         "spark-internal",
-        "5 7"
-      )
-    )
+        "5 7"))
   }
 }

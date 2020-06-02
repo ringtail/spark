@@ -16,20 +16,21 @@
  */
 package org.apache.spark.deploy.k8s
 
+import scala.collection.mutable
+
 import io.fabric8.kubernetes.api.model.{
   LocalObjectReference,
   LocalObjectReferenceBuilder,
   Pod,
   Toleration
 }
+
 import org.apache.spark.SparkConf
 import org.apache.spark.deploy.k8s.Config._
 import org.apache.spark.deploy.k8s.Constants._
-import org.apache.spark.deploy.k8s.submit.KubernetesClientApplication._
 import org.apache.spark.deploy.k8s.submit._
+import org.apache.spark.deploy.k8s.submit.KubernetesClientApplication._
 import org.apache.spark.internal.config.ConfigEntry
-
-import scala.collection.mutable
 
 private[spark] sealed trait KubernetesRoleSpecificConf
 
@@ -37,39 +38,37 @@ private[spark] sealed trait KubernetesRoleSpecificConf
  * Structure containing metadata for Kubernetes logic that builds a Spark driver.
  */
 private[spark] case class KubernetesDriverSpecificConf(
-  mainAppResource: Option[MainAppResource],
-  mainClass: String,
-  appName: String,
-  appArgs: Seq[String]
-) extends KubernetesRoleSpecificConf
+    mainAppResource: Option[MainAppResource],
+    mainClass: String,
+    appName: String,
+    appArgs: Seq[String])
+    extends KubernetesRoleSpecificConf
 
 /*
  * Structure containing metadata for Kubernetes logic that builds a Spark executor.
  */
-private[spark] case class KubernetesExecutorSpecificConf(executorId: String,
-                                                         driverPod: Option[Pod])
+private[spark] case class KubernetesExecutorSpecificConf(
+    executorId: String,
+    driverPod: Option[Pod])
     extends KubernetesRoleSpecificConf
 
 /**
-  * Structure containing metadata for Kubernetes logic to build Spark pods.
-  */
+ * Structure containing metadata for Kubernetes logic to build Spark pods.
+ */
 private[spark] case class KubernetesConf[T <: KubernetesRoleSpecificConf](
-  sparkConf: SparkConf,
-  roleSpecificConf: T,
-  appResourceNamePrefix: String,
-  appId: String,
-  roleLabels: Map[String, String],
-  roleAnnotations: Map[String, String],
-  roleSecretNamesToMountPaths: Map[String, String],
-  roleSecretEnvNamesToKeyRefs: Map[String, String],
-  roleEnvs: Map[String, String],
-  roleVolumes: Iterable[
-    KubernetesVolumeSpec[_ <: KubernetesVolumeSpecificConf]
-  ],
-  driverTolerations: Seq[Toleration],
-  executorTolerations: Seq[Toleration],
-  sparkFiles: Seq[String]
-) {
+    sparkConf: SparkConf,
+    roleSpecificConf: T,
+    appResourceNamePrefix: String,
+    appId: String,
+    roleLabels: Map[String, String],
+    roleAnnotations: Map[String, String],
+    roleSecretNamesToMountPaths: Map[String, String],
+    roleSecretEnvNamesToKeyRefs: Map[String, String],
+    roleEnvs: Map[String, String],
+    roleVolumes: Iterable[KubernetesVolumeSpec[_ <: KubernetesVolumeSpecificConf]],
+    driverTolerations: Seq[Toleration],
+    executorTolerations: Seq[Toleration],
+    sparkFiles: Seq[String]) {
 
   def namespace(): String = sparkConf.get(KUBERNETES_NAMESPACE)
 
@@ -109,10 +108,7 @@ private[spark] case class KubernetesConf[T <: KubernetesRoleSpecificConf](
   }
 
   def nodeSelector(): Map[String, String] =
-    KubernetesUtils.parsePrefixedKeyValuePairs(
-      sparkConf,
-      KUBERNETES_NODE_SELECTOR_PREFIX
-    )
+    KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_NODE_SELECTOR_PREFIX)
 
   def get[T](config: ConfigEntry[T]): T = sparkConf.get(config)
 
@@ -125,16 +121,16 @@ private[spark] case class KubernetesConf[T <: KubernetesRoleSpecificConf](
 }
 
 private[spark] object KubernetesConf {
+
   def createDriverConf(
-    sparkConf: SparkConf,
-    appName: String,
-    appResourceNamePrefix: String,
-    appId: String,
-    mainAppResource: Option[MainAppResource],
-    mainClass: String,
-    appArgs: Array[String],
-    maybePyFiles: Option[String]
-  ): KubernetesConf[KubernetesDriverSpecificConf] = {
+      sparkConf: SparkConf,
+      appName: String,
+      appResourceNamePrefix: String,
+      appId: String,
+      mainAppResource: Option[MainAppResource],
+      mainClass: String,
+      appArgs: Array[String],
+      maybePyFiles: Option[String]): KubernetesConf[KubernetesDriverSpecificConf] = {
     val sparkConfWithMainAppJar = sparkConf.clone()
     val additionalFiles = mutable.ArrayBuffer.empty[String]
     mainAppResource.foreach {
@@ -155,10 +151,7 @@ private[spark] object KubernetesConf {
             maybePyFiles.foreach { maybePyFiles =>
               additionalFiles.appendAll(maybePyFiles.split(","))
             }
-            sparkConfWithMainAppJar.set(
-              KUBERNETES_PYSPARK_MAIN_APP_RESOURCE,
-              res
-            )
+            sparkConfWithMainAppJar.set(KUBERNETES_PYSPARK_MAIN_APP_RESOURCE, res)
           case RMainAppResource(res) =>
             additionalFiles += res
             sparkConfWithMainAppJar.set(KUBERNETES_R_MAIN_APP_RESOURCE, res)
@@ -166,41 +159,31 @@ private[spark] object KubernetesConf {
         sparkConfWithMainAppJar.setIfMissing(MEMORY_OVERHEAD_FACTOR, 0.4)
     }
 
-    val driverCustomLabels = KubernetesUtils.parsePrefixedKeyValuePairs(
-      sparkConf,
-      KUBERNETES_DRIVER_LABEL_PREFIX
-    )
+    val driverCustomLabels =
+      KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_DRIVER_LABEL_PREFIX)
     require(
       !driverCustomLabels.contains(SPARK_APP_ID_LABEL),
       "Label with key " +
         s"$SPARK_APP_ID_LABEL is not allowed as it is reserved for Spark bookkeeping " +
-        "operations."
-    )
+        "operations.")
     require(
       !driverCustomLabels.contains(SPARK_ROLE_LABEL),
       "Label with key " +
         s"$SPARK_ROLE_LABEL is not allowed as it is reserved for Spark bookkeeping " +
-        "operations."
-    )
+        "operations.")
     val driverLabels = driverCustomLabels ++ Map(
       SPARK_APP_ID_LABEL -> appId,
-      SPARK_ROLE_LABEL -> SPARK_POD_DRIVER_ROLE
-    )
-    val driverAnnotations = KubernetesUtils.parsePrefixedKeyValuePairs(
-      sparkConf,
-      KUBERNETES_DRIVER_ANNOTATION_PREFIX
-    )
+      SPARK_ROLE_LABEL -> SPARK_POD_DRIVER_ROLE)
+    val driverAnnotations =
+      KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_DRIVER_ANNOTATION_PREFIX)
     val driverSecretNamesToMountPaths = KubernetesUtils
       .parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_DRIVER_SECRETS_PREFIX)
     val driverSecretEnvNamesToKeyRefs =
       KubernetesUtils.parsePrefixedKeyValuePairs(
         sparkConf,
-        KUBERNETES_DRIVER_SECRET_KEY_REF_PREFIX
-      )
-    val driverEnvs = KubernetesUtils.parsePrefixedKeyValuePairs(
-      sparkConf,
-      KUBERNETES_DRIVER_ENV_PREFIX
-    )
+        KUBERNETES_DRIVER_SECRET_KEY_REF_PREFIX)
+    val driverEnvs =
+      KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_DRIVER_ENV_PREFIX)
     val driverVolumes = KubernetesVolumeUtils
       .parseVolumesWithPrefix(sparkConf, KUBERNETES_DRIVER_VOLUMES_PREFIX)
       .map(_.get)
@@ -211,10 +194,8 @@ private[spark] object KubernetesConf {
       .map(_.get)
 
     // parse driver tolerations from sparkConf
-    val driverTolerationsMap = KubernetesUtils.parsePrefixedKeyValuePairs(
-      sparkConf,
-      KUBERNETES_DRIVER_TOLERATION_PREFIX
-    )
+    val driverTolerationsMap =
+      KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_DRIVER_TOLERATION_PREFIX)
 
     val driverTolerations =
       KubernetesUtils.parseTolerations(driverTolerationsMap)
@@ -226,12 +207,7 @@ private[spark] object KubernetesConf {
 
     KubernetesConf(
       sparkConfWithMainAppJar,
-      KubernetesDriverSpecificConf(
-        mainAppResource,
-        mainClass,
-        appName,
-        appArgs
-      ),
+      KubernetesDriverSpecificConf(mainAppResource, mainClass, appName, appArgs),
       appResourceNamePrefix,
       appId,
       driverLabels,
@@ -242,51 +218,38 @@ private[spark] object KubernetesConf {
       driverVolumes,
       driverTolerations,
       Seq.empty[Toleration],
-      sparkFiles
-    )
+      sparkFiles)
   }
 
   def createExecutorConf(
-    sparkConf: SparkConf,
-    executorId: String,
-    appId: String,
-    driverPod: Option[Pod]
-  ): KubernetesConf[KubernetesExecutorSpecificConf] = {
-    val executorCustomLabels = KubernetesUtils.parsePrefixedKeyValuePairs(
-      sparkConf,
-      KUBERNETES_EXECUTOR_LABEL_PREFIX
-    )
+      sparkConf: SparkConf,
+      executorId: String,
+      appId: String,
+      driverPod: Option[Pod]): KubernetesConf[KubernetesExecutorSpecificConf] = {
+    val executorCustomLabels =
+      KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_EXECUTOR_LABEL_PREFIX)
     require(
       !executorCustomLabels.contains(SPARK_APP_ID_LABEL),
-      s"Custom executor labels cannot contain $SPARK_APP_ID_LABEL as it is reserved for Spark."
-    )
+      s"Custom executor labels cannot contain $SPARK_APP_ID_LABEL as it is reserved for Spark.")
     require(
       !executorCustomLabels.contains(SPARK_EXECUTOR_ID_LABEL),
       s"Custom executor labels cannot contain $SPARK_EXECUTOR_ID_LABEL as it is reserved for" +
-        " Spark."
-    )
+        " Spark.")
     require(
       !executorCustomLabels.contains(SPARK_ROLE_LABEL),
-      s"Custom executor labels cannot contain $SPARK_ROLE_LABEL as it is reserved for Spark."
-    )
+      s"Custom executor labels cannot contain $SPARK_ROLE_LABEL as it is reserved for Spark.")
     val executorLabels = Map(
       SPARK_EXECUTOR_ID_LABEL -> executorId,
       SPARK_APP_ID_LABEL -> appId,
-      SPARK_ROLE_LABEL -> SPARK_POD_EXECUTOR_ROLE
-    ) ++
+      SPARK_ROLE_LABEL -> SPARK_POD_EXECUTOR_ROLE) ++
       executorCustomLabels
-    val executorAnnotations = KubernetesUtils.parsePrefixedKeyValuePairs(
-      sparkConf,
-      KUBERNETES_EXECUTOR_ANNOTATION_PREFIX
-    )
-    val executorMountSecrets = KubernetesUtils.parsePrefixedKeyValuePairs(
-      sparkConf,
-      KUBERNETES_EXECUTOR_SECRETS_PREFIX
-    )
+    val executorAnnotations =
+      KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_EXECUTOR_ANNOTATION_PREFIX)
+    val executorMountSecrets =
+      KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_EXECUTOR_SECRETS_PREFIX)
     val executorEnvSecrets = KubernetesUtils.parsePrefixedKeyValuePairs(
       sparkConf,
-      KUBERNETES_EXECUTOR_SECRET_KEY_REF_PREFIX
-    )
+      KUBERNETES_EXECUTOR_SECRET_KEY_REF_PREFIX)
     val executorEnv = sparkConf.getExecutorEnv.toMap
     val executorVolumes = KubernetesVolumeUtils
       .parseVolumesWithPrefix(sparkConf, KUBERNETES_EXECUTOR_VOLUMES_PREFIX)
@@ -296,18 +259,16 @@ private[spark] object KubernetesConf {
     // (not the one used by cluster mode inside the container)
     val appResourceNamePrefix = {
       if (sparkConf
-            .getOption(KUBERNETES_EXECUTOR_POD_NAME_PREFIX.key)
-            .isEmpty) {
+          .getOption(KUBERNETES_EXECUTOR_POD_NAME_PREFIX.key)
+          .isEmpty) {
         getResourceNamePrefix(getAppName(sparkConf))
       } else {
         sparkConf.get(KUBERNETES_EXECUTOR_POD_NAME_PREFIX)
       }
     }
 
-    val executorTolerationsMap = KubernetesUtils.parsePrefixedKeyValuePairs(
-      sparkConf,
-      KUBERNETES_EXECUTOR_TOLERATION_PREFIX
-    )
+    val executorTolerationsMap =
+      KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_EXECUTOR_TOLERATION_PREFIX)
 
     val executorTolerations =
       KubernetesUtils.parseTolerations(executorTolerationsMap)
@@ -325,7 +286,6 @@ private[spark] object KubernetesConf {
       executorVolumes,
       Seq.empty[Toleration],
       executorTolerations,
-      Seq.empty[String]
-    )
+      Seq.empty[String])
   }
 }

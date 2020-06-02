@@ -23,11 +23,7 @@ import org.mockito.MockitoAnnotations
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 
 import org.apache.spark.{SparkConf, SparkFunSuite}
-import org.apache.spark.deploy.k8s.{
-  KubernetesConf,
-  KubernetesExecutorSpecificConf,
-  SparkPod
-}
+import org.apache.spark.deploy.k8s.{KubernetesConf, KubernetesExecutorSpecificConf, SparkPod}
 import org.apache.spark.deploy.k8s.Config._
 import org.apache.spark.deploy.k8s.Constants._
 import org.apache.spark.rpc.RpcEndpointAddress
@@ -41,11 +37,11 @@ class BasicExecutorFeatureStepSuite
   private val APP_ID = "app-id"
   private val DRIVER_HOSTNAME = "localhost"
   private val DRIVER_PORT = 7098
+
   private val DRIVER_ADDRESS = RpcEndpointAddress(
     DRIVER_HOSTNAME,
     DRIVER_PORT.toInt,
-    CoarseGrainedSchedulerBackend.ENDPOINT_NAME
-  )
+    CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
   private val DRIVER_POD_NAME = "driver-pod"
 
   private val DRIVER_POD_UID = "driver-uid"
@@ -54,10 +50,12 @@ class BasicExecutorFeatureStepSuite
   private val LABELS = Map("label1key" -> "label1value")
   private val ANNOTATIONS = Map("annotation1key" -> "annotation1value")
   private val TEST_IMAGE_PULL_SECRETS = Seq("my-1secret-1", "my-secret-2")
+
   private val TEST_IMAGE_PULL_SECRET_OBJECTS =
     TEST_IMAGE_PULL_SECRETS.map { secret =>
       new LocalObjectReferenceBuilder().withName(secret).build()
     }
+
   private val DRIVER_POD = new PodBuilder()
     .withNewMetadata()
     .withName(DRIVER_POD_NAME)
@@ -100,17 +98,13 @@ class BasicExecutorFeatureStepSuite
         Nil,
         Seq.empty[Toleration],
         Seq.empty[Toleration],
-        Seq.empty[String]
-      )
-    )
+        Seq.empty[String]))
     val executor = step.configurePod(SparkPod.initialPod())
 
     // The executor pod name and default labels.
     assert(executor.pod.getMetadata.getName === s"$RESOURCE_NAME_PREFIX-exec-1")
     assert(executor.pod.getMetadata.getLabels.asScala === LABELS)
-    assert(
-      executor.pod.getSpec.getImagePullSecrets.asScala === TEST_IMAGE_PULL_SECRET_OBJECTS
-    )
+    assert(executor.pod.getSpec.getImagePullSecrets.asScala === TEST_IMAGE_PULL_SECRET_OBJECTS)
 
     // There is exactly 1 container with no volume mounts and default memory limits.
     // Default memory limit is 1024M + 384M (minimum overhead constant).
@@ -120,8 +114,7 @@ class BasicExecutorFeatureStepSuite
     assert(
       executor.container.getResources.getLimits
         .get("memory")
-        .getAmount === "1408Mi"
-    )
+        .getAmount === "1408Mi")
 
     // The pod has no node selector, volumes.
     assert(executor.pod.getSpec.getNodeSelector.isEmpty)
@@ -150,22 +143,17 @@ class BasicExecutorFeatureStepSuite
         Nil,
         Seq.empty[Toleration],
         Seq.empty[Toleration],
-        Seq.empty[String]
-      )
-    )
+        Seq.empty[String]))
     assert(
       step
         .configurePod(SparkPod.initialPod())
         .pod
         .getSpec
         .getHostname
-        .length === 63
-    )
+        .length === 63)
   }
 
-  test(
-    "classpath and extra java options get translated into environment variables"
-  ) {
+  test("classpath and extra java options get translated into environment variables") {
     val conf = baseConf.clone()
     conf.set(org.apache.spark.internal.config.EXECUTOR_JAVA_OPTIONS, "foo=bar")
     conf.set(org.apache.spark.internal.config.EXECUTOR_CLASS_PATH, "bar=baz")
@@ -184,19 +172,12 @@ class BasicExecutorFeatureStepSuite
         Nil,
         Seq.empty[Toleration],
         Seq.empty[Toleration],
-        Seq.empty[String]
-      )
-    )
+        Seq.empty[String]))
     val executor = step.configurePod(SparkPod.initialPod())
 
     checkEnv(
       executor,
-      Map(
-        "SPARK_JAVA_OPT_0" -> "foo=bar",
-        ENV_CLASSPATH -> "bar=baz",
-        "qux" -> "quux"
-      )
-    )
+      Map("SPARK_JAVA_OPT_0" -> "foo=bar", ENV_CLASSPATH -> "bar=baz", "qux" -> "quux"))
     checkOwnerReferences(executor.pod, DRIVER_POD_UID)
   }
 
@@ -219,33 +200,24 @@ class BasicExecutorFeatureStepSuite
         Nil,
         Seq.empty[Toleration],
         Seq.empty[Toleration],
-        Seq.empty[String]
-      )
-    )
+        Seq.empty[String]))
     val executor = step.configurePod(SparkPod.initialPod())
     // This is checking that basic executor + executorMemory = 1408 + 42 = 1450
     assert(
       executor.container.getResources.getRequests
         .get("memory")
-        .getAmount === "1450Mi"
-    )
+        .getAmount === "1450Mi")
   }
 
   // There is always exactly one controller reference, and it points to the driver pod.
-  private def checkOwnerReferences(executor: Pod,
-                                   driverPodUid: String): Unit = {
+  private def checkOwnerReferences(executor: Pod, driverPodUid: String): Unit = {
     assert(executor.getMetadata.getOwnerReferences.size() === 1)
-    assert(
-      executor.getMetadata.getOwnerReferences.get(0).getUid === driverPodUid
-    )
-    assert(
-      executor.getMetadata.getOwnerReferences.get(0).getController === true
-    )
+    assert(executor.getMetadata.getOwnerReferences.get(0).getUid === driverPodUid)
+    assert(executor.getMetadata.getOwnerReferences.get(0).getController === true)
   }
 
   // Check that the expected environment variables are present.
-  private def checkEnv(executorPod: SparkPod,
-                       additionalEnvVars: Map[String, String]): Unit = {
+  private def checkEnv(executorPod: SparkPod, additionalEnvVars: Map[String, String]): Unit = {
     val defaultEnvs = Map(
       ENV_EXECUTOR_ID -> "1",
       ENV_DRIVER_URL -> DRIVER_ADDRESS.toString,
@@ -253,8 +225,7 @@ class BasicExecutorFeatureStepSuite
       ENV_EXECUTOR_MEMORY -> "1g",
       ENV_APPLICATION_ID -> APP_ID,
       ENV_SPARK_CONF_DIR -> SPARK_CONF_DIR_INTERNAL,
-      ENV_EXECUTOR_POD_IP -> null
-    ) ++ additionalEnvVars
+      ENV_EXECUTOR_POD_IP -> null) ++ additionalEnvVars
 
     assert(executorPod.container.getEnv.size() === defaultEnvs.size)
     val mapEnvs = executorPod.container.getEnv.asScala.map { x =>

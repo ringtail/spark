@@ -24,6 +24,7 @@ import io.fabric8.kubernetes.api.model.{
 }
 import org.mockito.Mockito
 import org.scalatest.BeforeAndAfter
+
 import org.apache.spark.{SparkConf, SparkFunSuite}
 import org.apache.spark.deploy.k8s.{
   KubernetesConf,
@@ -35,6 +36,7 @@ import org.apache.spark.deploy.k8s.{
 class LocalDirsFeatureStepSuite extends SparkFunSuite with BeforeAndAfter {
   private val defaultLocalDir = "/var/data/default-local-dir"
   private var sparkConf: SparkConf = _
+
   private var kubernetesConf: KubernetesConf[_ <: KubernetesRoleSpecificConf] =
     _
 
@@ -54,8 +56,7 @@ class LocalDirsFeatureStepSuite extends SparkFunSuite with BeforeAndAfter {
       Nil,
       Seq.empty[Toleration],
       Seq.empty[Toleration],
-      Seq.empty[String]
-    )
+      Seq.empty[String])
   }
 
   test("Resolve to default local dir if neither env nor configuration are set") {
@@ -71,24 +72,21 @@ class LocalDirsFeatureStepSuite extends SparkFunSuite with BeforeAndAfter {
           .withName(s"spark-local-dir-1")
           .withNewEmptyDir()
           .endEmptyDir()
-          .build()
-    )
+          .build())
     assert(configuredPod.container.getVolumeMounts.size === 1)
     assert(
       configuredPod.container.getVolumeMounts.get(0) ===
         new VolumeMountBuilder()
           .withName(s"spark-local-dir-1")
           .withMountPath(defaultLocalDir)
-          .build()
-    )
+          .build())
     assert(configuredPod.container.getEnv.size === 1)
     assert(
       configuredPod.container.getEnv.get(0) ===
         new EnvVarBuilder()
           .withName("SPARK_LOCAL_DIRS")
           .withValue(defaultLocalDir)
-          .build()
-    )
+          .build())
   }
 
   test("Use configured local dirs split on comma if provided.") {
@@ -106,38 +104,33 @@ class LocalDirsFeatureStepSuite extends SparkFunSuite with BeforeAndAfter {
           .withName(s"spark-local-dir-1")
           .withNewEmptyDir()
           .endEmptyDir()
-          .build()
-    )
+          .build())
     assert(
       configuredPod.pod.getSpec.getVolumes.get(1) ===
         new VolumeBuilder()
           .withName(s"spark-local-dir-2")
           .withNewEmptyDir()
           .endEmptyDir()
-          .build()
-    )
+          .build())
     assert(configuredPod.container.getVolumeMounts.size === 2)
     assert(
       configuredPod.container.getVolumeMounts.get(0) ===
         new VolumeMountBuilder()
           .withName(s"spark-local-dir-1")
           .withMountPath("/var/data/my-local-dir-1")
-          .build()
-    )
+          .build())
     assert(
       configuredPod.container.getVolumeMounts.get(1) ===
         new VolumeMountBuilder()
           .withName(s"spark-local-dir-2")
           .withMountPath("/var/data/my-local-dir-2")
-          .build()
-    )
+          .build())
     assert(configuredPod.container.getEnv.size === 1)
     assert(
       configuredPod.container.getEnv.get(0) ===
         new EnvVarBuilder()
           .withName("SPARK_LOCAL_DIRS")
           .withValue("/var/data/my-local-dir-1,/var/data/my-local-dir-2")
-          .build()
-    )
+          .build())
   }
 }

@@ -16,29 +16,30 @@
  */
 package org.apache.spark.deploy.k8s.features
 
+import scala.collection.JavaConverters._
+
 import io.fabric8.kubernetes.api.model._
+
 import org.apache.spark.SparkException
+import org.apache.spark.deploy.k8s._
 import org.apache.spark.deploy.k8s.Config._
 import org.apache.spark.deploy.k8s.Constants._
-import org.apache.spark.deploy.k8s._
 import org.apache.spark.internal.config._
 import org.apache.spark.rpc.RpcEndpointAddress
 import org.apache.spark.scheduler.cluster.CoarseGrainedSchedulerBackend
 import org.apache.spark.util.Utils
 
-import scala.collection.JavaConverters._
-
 private[spark] class BasicExecutorFeatureStep(
-                                               kubernetesConf: KubernetesConf[KubernetesExecutorSpecificConf]
-                                             ) extends KubernetesFeatureConfigStep {
+    kubernetesConf: KubernetesConf[KubernetesExecutorSpecificConf])
+    extends KubernetesFeatureConfigStep {
 
   // Consider moving some of these fields to KubernetesConf or KubernetesExecutorSpecificConf
   private val executorExtraClasspath = kubernetesConf.get(EXECUTOR_CLASS_PATH)
+
   private val executorContainerImage = kubernetesConf
     .get(EXECUTOR_CONTAINER_IMAGE)
-    .getOrElse(
-      throw new SparkException("Must specify the executor container image")
-    )
+    .getOrElse(throw new SparkException("Must specify the executor container image"))
+
   private val blockManagerPort = kubernetesConf.sparkConf
     .getInt("spark.blockmanager.port", DEFAULT_BLOCKMANAGER_PORT)
 
@@ -47,9 +48,9 @@ private[spark] class BasicExecutorFeatureStep(
   private val driverUrl = RpcEndpointAddress(
     kubernetesConf.get("spark.driver.host"),
     kubernetesConf.sparkConf.getInt("spark.driver.port", DEFAULT_DRIVER_PORT),
-    CoarseGrainedSchedulerBackend.ENDPOINT_NAME
-  ).toString
+    CoarseGrainedSchedulerBackend.ENDPOINT_NAME).toString
   private val executorMemoryMiB = kubernetesConf.get(EXECUTOR_MEMORY)
+
   private val executorMemoryString =
     kubernetesConf.get(EXECUTOR_MEMORY.key, EXECUTOR_MEMORY.defaultValueString)
 
@@ -58,10 +59,9 @@ private[spark] class BasicExecutorFeatureStep(
     .getOrElse(
       math.max(
         (kubernetesConf.get(MEMORY_OVERHEAD_FACTOR) * executorMemoryMiB).toInt,
-        MEMORY_OVERHEAD_MIN_MIB
-      )
-    )
+        MEMORY_OVERHEAD_MIN_MIB))
   private val executorMemoryWithOverhead = executorMemoryMiB + memoryOverheadMiB
+
   private val executorMemoryTotal = kubernetesConf.sparkConf
     .getOption(APP_RESOURCE_TYPE.key)
     .map { res =>
@@ -79,12 +79,14 @@ private[spark] class BasicExecutorFeatureStep(
 
   private val executorCores =
     kubernetesConf.sparkConf.getInt("spark.executor.cores", 1)
+
   private val executorCoresRequest =
     if (kubernetesConf.sparkConf.contains(KUBERNETES_EXECUTOR_REQUEST_CORES)) {
       kubernetesConf.get(KUBERNETES_EXECUTOR_REQUEST_CORES).get
     } else {
       executorCores.toString
     }
+
   private val executorLimitCores =
     kubernetesConf.get(KUBERNETES_EXECUTOR_LIMIT_CORES)
 
@@ -116,8 +118,7 @@ private[spark] class BasicExecutorFeatureStep(
         val subsOpts = Utils.substituteAppNExecIds(
           opts,
           kubernetesConf.appId,
-          kubernetesConf.roleSpecificConf.executorId
-        )
+          kubernetesConf.roleSpecificConf.executorId)
         val delimitedOpts = Utils.splitCommandString(subsOpts)
         delimitedOpts.zipWithIndex.map {
           case (opt, index) =>
@@ -135,25 +136,20 @@ private[spark] class BasicExecutorFeatureStep(
       (ENV_APPLICATION_ID, kubernetesConf.appId),
       // This is to set the SPARK_CONF_DIR to be /opt/spark/conf
       (ENV_SPARK_CONF_DIR, SPARK_CONF_DIR_INTERNAL),
-      (ENV_EXECUTOR_ID, kubernetesConf.roleSpecificConf.executorId)
-    ) ++
+      (ENV_EXECUTOR_ID, kubernetesConf.roleSpecificConf.executorId)) ++
       kubernetesConf.roleEnvs)
       .map(
         env =>
           new EnvVarBuilder()
             .withName(env._1)
             .withValue(env._2)
-            .build()
-      ) ++ Seq(
+            .build()) ++ Seq(
       new EnvVarBuilder()
         .withName(ENV_EXECUTOR_POD_IP)
-        .withValueFrom(
-          new EnvVarSourceBuilder()
-            .withNewFieldRef("v1", "status.podIP")
-            .build()
-        )
-        .build()
-    ) ++ executorExtraJavaOptionsEnv ++ executorExtraClasspathEnv.toSeq
+        .withValueFrom(new EnvVarSourceBuilder()
+          .withNewFieldRef("v1", "status.podIP")
+          .build())
+        .build()) ++ executorExtraJavaOptionsEnv ++ executorExtraClasspathEnv.toSeq
     val requiredPorts = Seq((BLOCK_MANAGER_PORT_NAME, blockManagerPort))
       .map {
         case (name, port) =>
@@ -197,8 +193,7 @@ private[spark] class BasicExecutorFeatureStep(
           .withKind(pod.getKind)
           .withName(pod.getMetadata.getName)
           .withUid(pod.getMetadata.getUid)
-          .build()
-    )
+          .build())
     val executorPod = new PodBuilder(pod.pod)
       .editOrNewMetadata()
       .withName(name)

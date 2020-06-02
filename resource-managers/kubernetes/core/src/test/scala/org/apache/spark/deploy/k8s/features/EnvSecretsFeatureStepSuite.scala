@@ -17,6 +17,7 @@
 package org.apache.spark.deploy.k8s.features
 
 import io.fabric8.kubernetes.api.model.{PodBuilder, Toleration}
+
 import org.apache.spark.{SparkConf, SparkFunSuite}
 import org.apache.spark.deploy.k8s._
 
@@ -32,8 +33,7 @@ class EnvSecretsFeatureStepSuite extends SparkFunSuite {
     val baseDriverPod = SparkPod.initialPod()
     val envVarsToKeys = Map(
       ENV_NAME_BAR -> s"${KEY_REF_NAME_BAR}:${KEY_REF_KEY_BAR}",
-      ENV_NAME_FOO -> s"${KEY_REF_NAME_FOO}:${KEY_REF_KEY_FOO}"
-    )
+      ENV_NAME_FOO -> s"${KEY_REF_NAME_FOO}:${KEY_REF_KEY_FOO}")
     val sparkConf = new SparkConf(false)
     val kubernetesConf = KubernetesConf(
       sparkConf,
@@ -48,8 +48,7 @@ class EnvSecretsFeatureStepSuite extends SparkFunSuite {
       Nil,
       Seq.empty[Toleration],
       Seq.empty[Toleration],
-      Seq.empty[String]
-    )
+      Seq.empty[String])
 
     val step = new EnvSecretsFeatureStep(kubernetesConf)
     val driverContainerWithEnvSecrets =
@@ -61,8 +60,7 @@ class EnvSecretsFeatureStepSuite extends SparkFunSuite {
     expectedVars.foreach { envName =>
       assert(
         KubernetesFeaturesTestUtils
-          .containerHasEnvVar(driverContainerWithEnvSecrets, envName)
-      )
+          .containerHasEnvVar(driverContainerWithEnvSecrets, envName))
     }
   }
 }
