@@ -17,37 +17,35 @@
 package org.apache.spark.deploy.k8s
 
 import io.fabric8.kubernetes.api.model.Toleration
+
 import org.apache.spark.SparkConf
 import org.apache.spark.util.Utils
 
 private[spark] object KubernetesUtils {
 
   /**
-    * Extract and parse Spark configuration properties with a given name prefix and
-    * return the result as a Map. Keys must not have more than one value.
-    *
-    * @param sparkConf Spark configuration
-    * @param prefix the given property name prefix
-    * @return a Map storing the configuration property keys and values
-    */
-  def parsePrefixedKeyValuePairs(sparkConf: SparkConf,
-                                 prefix: String): Map[String, String] = {
+   * Extract and parse Spark configuration properties with a given name prefix and
+   * return the result as a Map. Keys must not have more than one value.
+   *
+   * @param sparkConf Spark configuration
+   * @param prefix the given property name prefix
+   * @return a Map storing the configuration property keys and values
+   */
+  def parsePrefixedKeyValuePairs(sparkConf: SparkConf, prefix: String): Map[String, String] = {
     sparkConf.getAllWithPrefix(prefix).toMap
   }
 
-  def requireNandDefined(opt1: Option[_],
-                         opt2: Option[_],
-                         errMessage: String): Unit = {
+  def requireNandDefined(opt1: Option[_], opt2: Option[_], errMessage: String): Unit = {
     opt1.foreach { _ =>
       require(opt2.isEmpty, errMessage)
     }
   }
 
   /**
-    * For the given collection of file URIs, resolves them as follows:
-    * - File URIs with scheme local:// resolve to just the path of the URI.
-    * - Otherwise, the URIs are returned as-is.
-    */
+   * For the given collection of file URIs, resolves them as follows:
+   * - File URIs with scheme local:// resolve to just the path of the URI.
+   * - Otherwise, the URIs are returned as-is.
+   */
   def resolveFileUrisAndPath(fileUris: Iterable[String]): Iterable[String] = {
     fileUris.map { uri =>
       resolveFileUri(uri)
@@ -59,7 +57,7 @@ private[spark] object KubernetesUtils {
     val fileScheme = Option(fileUri.getScheme).getOrElse("file")
     fileScheme match {
       case "local" => fileUri.getPath
-      case _       => uri
+      case _ => uri
     }
   }
 

@@ -17,6 +17,7 @@
 package org.apache.spark.deploy.k8s.features
 
 import io.fabric8.kubernetes.api.model.{PodBuilder, Toleration}
+
 import org.apache.spark.{SparkConf, SparkFunSuite}
 import org.apache.spark.deploy.k8s.{
   KubernetesConf,
@@ -49,8 +50,7 @@ class MountSecretsFeatureStepSuite extends SparkFunSuite {
       Nil,
       Seq.empty[Toleration],
       Seq.empty[Toleration],
-      Seq.empty[String]
-    )
+      Seq.empty[String])
 
     val step = new MountSecretsFeatureStep(kubernetesConf)
     val driverPodWithSecretsMounted = step.configurePod(baseDriverPod).pod
@@ -58,18 +58,12 @@ class MountSecretsFeatureStepSuite extends SparkFunSuite {
       step.configurePod(baseDriverPod).container
 
     Seq(s"$SECRET_FOO-volume", s"$SECRET_BAR-volume").foreach { volumeName =>
-      assert(
-        SecretVolumeUtils.podHasVolume(driverPodWithSecretsMounted, volumeName)
-      )
+      assert(SecretVolumeUtils.podHasVolume(driverPodWithSecretsMounted, volumeName))
     }
     Seq(s"$SECRET_FOO-volume", s"$SECRET_BAR-volume").foreach { volumeName =>
       assert(
-        SecretVolumeUtils.containerHasVolume(
-          driverContainerWithSecretsMounted,
-          volumeName,
-          SECRET_MOUNT_PATH
-        )
-      )
+        SecretVolumeUtils
+          .containerHasVolume(driverContainerWithSecretsMounted, volumeName, SECRET_MOUNT_PATH))
     }
   }
 }
