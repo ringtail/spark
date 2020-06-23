@@ -409,6 +409,20 @@ private[spark] object Config extends Logging {
       .stringConf
       .createOptional
 
+  val KUBERNETES_DRIVER_NODE_NAME =
+    ConfigBuilder("spark.kubernetes.driver.node.name")
+      .doc("Spark driver pod name")
+      .version("3.0.0")
+      .stringConf
+      .createOptional
+
+  val KUBERNETES_EXECUTOR_NODE_NAME =
+    ConfigBuilder("spark.kubernetes.executor.node.name")
+      .doc("Spark executor pod name")
+      .version("3.0.0")
+      .stringConf
+      .createOptional
+
   val KUBERNETES_DRIVER_LABEL_PREFIX = "spark.kubernetes.driver.label."
   val KUBERNETES_DRIVER_ANNOTATION_PREFIX = "spark.kubernetes.driver.annotation."
   val KUBERNETES_DRIVER_SERVICE_ANNOTATION_PREFIX = "spark.kubernetes.driver.service.annotation."

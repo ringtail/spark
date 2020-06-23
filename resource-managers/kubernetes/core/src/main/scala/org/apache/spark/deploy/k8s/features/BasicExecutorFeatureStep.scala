@@ -76,6 +76,8 @@ private[spark] class BasicExecutorFeatureStep(
     }
   private val executorLimitCores = kubernetesConf.get(KUBERNETES_EXECUTOR_LIMIT_CORES)
 
+  private val executorNodeName = kubernetesConf.get(KUBERNETES_EXECUTOR_NODE_NAME)
+
   override def configurePod(pod: SparkPod): SparkPod = {
     val name = s"$executorPodNamePrefix-exec-${kubernetesConf.executorId}"
 
@@ -207,6 +209,7 @@ private[spark] class BasicExecutorFeatureStep(
         .withRestartPolicy("Never")
         .addToNodeSelector(kubernetesConf.nodeSelector.asJava)
         .addToImagePullSecrets(kubernetesConf.imagePullSecrets: _*)
+        .withNodeName(executorNodeName.toString)
         .endSpec()
       .build()
 

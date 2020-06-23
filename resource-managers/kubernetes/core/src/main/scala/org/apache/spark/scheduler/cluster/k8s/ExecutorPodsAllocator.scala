@@ -72,6 +72,8 @@ private[spark] class ExecutorPodsAllocator(
 
   private var lastSnapshot = ExecutorPodsSnapshot(Nil)
 
+  private var minRegisteredExecutorsRatio = 0.8
+
   // Executors that have been deleted by this allocator but not yet detected as deleted in
   // a snapshot from the API server. This is used to deny registration from these executors
   // if they happen to come up before the deletion takes effect.
@@ -91,6 +93,9 @@ private[spark] class ExecutorPodsAllocator(
   }
 
   def isDeleted(executorId: String): Boolean = deletedExecutorIds.contains(executorId.toLong)
+
+  def setMinRegisteredExecutorsRatio(ratio: Double): Unit =
+    minRegisteredExecutorsRatio = ratio
 
   private def onNewSnapshots(
       applicationId: String,
@@ -139,6 +144,12 @@ private[spark] class ExecutorPodsAllocator(
     val currentRunningCount = lastSnapshot.executorPods.values.count {
       case PodRunning(_) => true
       case _ => false
+    }
+
+
+    val currentRequestExecutors = lastSnapshot.executorPods.values.count {
+      case PodDeleted(_) => false
+      case _ => true
     }
 
     val currentPendingExecutors = lastSnapshot.executorPods
@@ -200,10 +211,11 @@ private[spark] class ExecutorPodsAllocator(
     }
 
     if (newlyCreatedExecutors.isEmpty
-        && currentPendingExecutors.isEmpty
-        && currentRunningCount < currentTotalExpectedExecutors) {
+//        && currentPendingExecutors.isEmpty
+        && currentRunningCount >= currentRequestExecutors * minRegisteredExecutorsRatio
+      && knownPendingCount < totalExpectedExecutors.get()) {
       val numExecutorsToAllocate = math.min(
-        currentTotalExpectedExecutors - currentRunningCount, podAllocationSize)
+        currentTotalExpectedExecutors - currentRequestExecutors, podAllocationSize)
       logInfo(s"Going to request $numExecutorsToAllocate executors from Kubernetes.")
       for ( _ <- 0 until numExecutorsToAllocate) {
         val newExecutorId = EXECUTOR_ID_COUNTER.incrementAndGet()
