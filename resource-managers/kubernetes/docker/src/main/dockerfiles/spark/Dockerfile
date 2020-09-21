@@ -19,7 +19,7 @@ FROM maven:3.5.4-jdk-8 AS build-env
 WORKDIR /spark
 ADD . /spark
 ENV MAVEN_OPTS="-Xmx2g -XX:ReservedCodeCacheSize=1g"
-RUN dev/make-distribution.sh --name dla-spark -Phadoop-2.7 -Phive -Phive-thriftserver -Pkubernetes -T 4 -DskipTests -DrecompileMode=all -X
+RUN dev/make-distribution.sh --name ack-spark -Phadoop-2.7 -Phive -Phive-thriftserver -Pkubernetes -T 4 -DskipTests -DrecompileMode=all -X
 
 
 FROM openjdk:8-jdk-slim
