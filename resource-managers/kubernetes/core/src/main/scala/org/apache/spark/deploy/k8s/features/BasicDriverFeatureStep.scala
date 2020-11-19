@@ -57,7 +57,7 @@ private[spark] class BasicDriverFeatureStep(conf: KubernetesConf[KubernetesDrive
         .max((conf.get(MEMORY_OVERHEAD_FACTOR) * driverMemoryMiB).toInt, MEMORY_OVERHEAD_MIN_MIB))
   private val driverMemoryWithOverheadMiB = driverMemoryMiB + memoryOverheadMiB
 
-  private val driverRequestMiB = kubernetesConf
+  private val driverRequestMiB = conf
     .get(DRIVER_MEMORY_REQUEST)
     .getOrElse(driverMemoryWithOverheadMiB)
 
