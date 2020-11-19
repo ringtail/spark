@@ -77,6 +77,10 @@ private[spark] class BasicExecutorFeatureStep(
     }
     .getOrElse(executorMemoryWithOverhead)
 
+  private val executorMemoryRequestMiB = kubernetesConf
+    .get(EXECUTOR_MEMORY_REQUEST)
+    .getOrElse(executorMemoryTotal)
+
   private val executorCores =
     kubernetesConf.sparkConf.getInt("spark.executor.cores", 1)
 
@@ -102,6 +106,9 @@ private[spark] class BasicExecutorFeatureStep(
     val hostname = name.substring(Math.max(0, name.length - 63))
     val executorMemoryQuantity = new QuantityBuilder(false)
       .withAmount(s"${executorMemoryTotal}Mi")
+      .build()
+    val executorMemoryRequestQuantity = new QuantityBuilder(false)
+      .withAmount(s"${executorMemoryRequestMiB}Mi")
       .build()
     val executorCpuQuantity = new QuantityBuilder(false)
       .withAmount(executorCoresRequest)
@@ -164,7 +171,7 @@ private[spark] class BasicExecutorFeatureStep(
       .withImage(executorContainerImage)
       .withImagePullPolicy(kubernetesConf.imagePullPolicy())
       .withNewResources()
-      .addToRequests("memory", executorMemoryQuantity)
+      .addToRequests("memory", executorMemoryRequestQuantity)
       .addToLimits("memory", executorMemoryQuantity)
       .addToRequests("cpu", executorCpuQuantity)
       .endResources()

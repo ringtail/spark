@@ -43,6 +43,11 @@ package object config {
     .bytesConf(ByteUnit.MiB)
     .createWithDefaultString("1g")
 
+  private[spark] val DRIVER_MEMORY_REQUEST = ConfigBuilder("spark.driver.memory.request")
+    .doc("Amount of memory to request for the driver process, in MiB unless otherwise specified.")
+    .bytesConf(ByteUnit.MiB)
+    .createOptional
+
   private[spark] val DRIVER_MEMORY_OVERHEAD = ConfigBuilder("spark.driver.memoryOverhead")
     .doc("The amount of off-heap memory to be allocated per driver in cluster mode, " +
       "in MiB unless otherwise specified.")
@@ -97,6 +102,11 @@ package object config {
     .doc("Amount of memory to use per executor process, in MiB unless otherwise specified.")
     .bytesConf(ByteUnit.MiB)
     .createWithDefaultString("1g")
+
+  private[spark] val EXECUTOR_MEMORY_REQUEST = ConfigBuilder("spark.executor.memory.request")
+    .doc("Amount of memory to request per executor process, in MiB unless otherwise specified.")
+    .bytesConf(ByteUnit.MiB)
+    .createOptional
 
   private[spark] val EXECUTOR_MEMORY_OVERHEAD = ConfigBuilder("spark.executor.memoryOverhead")
     .doc("The amount of off-heap memory to be allocated per executor in cluster mode, " +
