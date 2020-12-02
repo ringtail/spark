@@ -656,6 +656,10 @@ private[spark] class SparkSubmit extends Logging {
       if (args.childArgs != null) {
         args.childArgs.foreach { arg => childArgs += ("--arg", arg) }
       }
+      // Pass the proxyUser to the k8s app so it is possible to add it to the driver args
+      if (args.proxyUser != null) {
+        childArgs += ("--proxy-user", args.proxyUser)
+      }
     }
 
     if (isMesosCluster) {

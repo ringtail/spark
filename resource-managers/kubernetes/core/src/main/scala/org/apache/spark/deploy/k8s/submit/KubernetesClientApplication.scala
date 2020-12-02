@@ -45,6 +45,7 @@ private[spark] case class ClientArguments(
     mainAppResource: Option[MainAppResource],
     mainClass: String,
     driverArgs: Array[String],
+    proxyUser: Option[String],
     maybePyFiles: Option[String])
 
 private[spark] object ClientArguments {
@@ -54,6 +55,7 @@ private[spark] object ClientArguments {
     var mainClass: Option[String] = None
     val driverArgs = mutable.ArrayBuffer.empty[String]
     var maybePyFiles : Option[String] = None
+    var proxyUser: Option[String] = None
 
     args.sliding(2, 2).toList.foreach {
       case Array("--primary-java-resource", primaryJavaResource: String) =>
@@ -68,6 +70,8 @@ private[spark] object ClientArguments {
         mainClass = Some(clazz)
       case Array("--arg", arg: String) =>
         driverArgs += arg
+      case Array("--proxy-user", user: String) =>
+        proxyUser = Some(user)
       case other =>
         val invalid = other.mkString(" ")
         throw new RuntimeException(s"Unknown arguments: $invalid")
@@ -79,6 +83,7 @@ private[spark] object ClientArguments {
       mainAppResource,
       mainClass.get,
       driverArgs.toArray,
+      proxyUser,
       maybePyFiles)
   }
 }
@@ -223,6 +228,7 @@ private[spark] class KubernetesClientApplication extends SparkApplication {
       clientArguments.mainAppResource,
       clientArguments.mainClass,
       clientArguments.driverArgs,
+      clientArguments.proxyUser,
       clientArguments.maybePyFiles)
     val builder = new KubernetesDriverBuilder
     val namespace = kubernetesConf.namespace()

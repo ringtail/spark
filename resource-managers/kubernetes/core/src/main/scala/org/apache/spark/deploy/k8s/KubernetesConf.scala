@@ -41,7 +41,8 @@ private[spark] case class KubernetesDriverSpecificConf(
     mainAppResource: Option[MainAppResource],
     mainClass: String,
     appName: String,
-    appArgs: Seq[String])
+    appArgs: Seq[String],
+    proxyUser: Option[String])
     extends KubernetesRoleSpecificConf
 
 /*
@@ -130,6 +131,7 @@ private[spark] object KubernetesConf {
       mainAppResource: Option[MainAppResource],
       mainClass: String,
       appArgs: Array[String],
+      proxyUser: Option[String],
       maybePyFiles: Option[String]): KubernetesConf[KubernetesDriverSpecificConf] = {
     val sparkConfWithMainAppJar = sparkConf.clone()
     val additionalFiles = mutable.ArrayBuffer.empty[String]
@@ -207,7 +209,7 @@ private[spark] object KubernetesConf {
 
     KubernetesConf(
       sparkConfWithMainAppJar,
-      KubernetesDriverSpecificConf(mainAppResource, mainClass, appName, appArgs),
+      KubernetesDriverSpecificConf(mainAppResource, mainClass, appName, appArgs, proxyUser),
       appResourceNamePrefix,
       appId,
       driverLabels,
