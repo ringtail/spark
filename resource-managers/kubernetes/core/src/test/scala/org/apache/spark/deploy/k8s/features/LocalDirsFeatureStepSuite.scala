@@ -45,7 +45,7 @@ class LocalDirsFeatureStepSuite extends SparkFunSuite with BeforeAndAfter {
     sparkConf = Mockito.spy(realSparkConf)
     kubernetesConf = KubernetesConf(
       sparkConf,
-      KubernetesDriverSpecificConf(None, "app-name", "main", Seq.empty),
+      KubernetesDriverSpecificConf(None, "app-name", "main", Seq.empty, None),
       "resource",
       "app-id",
       Map.empty,
