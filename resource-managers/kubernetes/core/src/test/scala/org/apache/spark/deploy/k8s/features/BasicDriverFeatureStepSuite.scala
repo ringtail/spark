@@ -58,7 +58,7 @@ class BasicDriverFeatureStepSuite extends SparkFunSuite {
     }
 
   private val emptyDriverSpecificConf =
-    KubernetesDriverSpecificConf(None, APP_NAME, MAIN_CLASS, APP_ARGS)
+    KubernetesDriverSpecificConf(None, APP_NAME, MAIN_CLASS, APP_ARGS, None)
 
   test("Check the pod respects all configurations from the user.") {
     val sparkConf = new SparkConf()
@@ -151,7 +151,8 @@ class BasicDriverFeatureStepSuite extends SparkFunSuite {
         Some(JavaMainAppResource("")),
         APP_NAME,
         PY_MAIN_CLASS,
-        APP_ARGS),
+        APP_ARGS,
+        None),
       RESOURCE_NAME_PREFIX,
       APP_ID,
       DRIVER_LABELS,
@@ -169,7 +170,8 @@ class BasicDriverFeatureStepSuite extends SparkFunSuite {
         Some(PythonMainAppResource("")),
         APP_NAME,
         PY_MAIN_CLASS,
-        APP_ARGS),
+        APP_ARGS,
+        None),
       RESOURCE_NAME_PREFIX,
       APP_ID,
       DRIVER_LABELS,

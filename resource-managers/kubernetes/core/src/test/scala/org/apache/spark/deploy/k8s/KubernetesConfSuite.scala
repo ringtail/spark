@@ -31,6 +31,7 @@ class KubernetesConfSuite extends SparkFunSuite {
   private val APP_ID = "test-id"
   private val MAIN_CLASS = "test-class"
   private val APP_ARGS = Array("arg1", "arg2")
+  private val PROXY_USER = ""
   private val CUSTOM_LABELS = Map(
     "customLabel1Key" -> "customLabel1Value",
     "customLabel2Key" -> "customLabel2Value")
@@ -59,6 +60,7 @@ class KubernetesConfSuite extends SparkFunSuite {
       mainAppResource = None,
       MAIN_CLASS,
       APP_ARGS,
+      proxyUser = None,
       maybePyFiles = None)
     assert(conf.appId === APP_ID)
     assert(conf.sparkConf.getAll.toMap === sparkConf.getAll.toMap)
@@ -81,6 +83,7 @@ class KubernetesConfSuite extends SparkFunSuite {
       mainAppJar,
       MAIN_CLASS,
       APP_ARGS,
+      proxyUser = None,
       maybePyFiles = None)
     assert(kubernetesConfWithMainJar.sparkConf.get("spark.jars")
       .split(",")
@@ -93,6 +96,7 @@ class KubernetesConfSuite extends SparkFunSuite {
       mainAppResource = None,
       MAIN_CLASS,
       APP_ARGS,
+      proxyUser = None,
       maybePyFiles = None)
     assert(kubernetesConfWithoutMainJar.sparkConf.get("spark.jars").split(",")
       === Array("local:///opt/spark/jar1.jar"))
@@ -114,6 +118,7 @@ class KubernetesConfSuite extends SparkFunSuite {
       mainAppResource,
       MAIN_CLASS,
       APP_ARGS,
+      proxyUser = None,
       Some(inputPyFiles.mkString(",")))
     assert(kubernetesConfWithMainResource.sparkConf.get("spark.jars").split(",")
       === Array("local:///opt/spark/jar1.jar"))
@@ -136,6 +141,7 @@ class KubernetesConfSuite extends SparkFunSuite {
       mainAppResource,
       MAIN_CLASS,
       APP_ARGS,
+      proxyUser = None,
       maybePyFiles = None)
     assert(kubernetesConfWithMainResource.sparkConf.get("spark.jars").split(",")
       === Array("local:///opt/spark/jar1.jar"))
@@ -158,6 +164,7 @@ class KubernetesConfSuite extends SparkFunSuite {
       mainAppResource,
       MAIN_CLASS,
       APP_ARGS,
+      None,
       None)
     assert(conf.sparkConf.get(MEMORY_OVERHEAD_FACTOR) === 0.3)
   }
@@ -189,6 +196,7 @@ class KubernetesConfSuite extends SparkFunSuite {
       mainAppResource = None,
       MAIN_CLASS,
       APP_ARGS,
+      proxyUser = None,
       maybePyFiles = None)
     assert(conf.roleLabels === Map(
       SPARK_APP_ID_LABEL -> APP_ID,

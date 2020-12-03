@@ -26,7 +26,7 @@ class MountVolumesFeatureStepSuite extends SparkFunSuite {
 
   private val emptyKubernetesConf = KubernetesConf(
     sparkConf = sparkConf,
-    roleSpecificConf = KubernetesDriverSpecificConf(None, "app-name", "main", Seq.empty),
+    roleSpecificConf = KubernetesDriverSpecificConf(None, "app-name", "main", Seq.empty, None),
     appResourceNamePrefix = "resource",
     appId = "app-id",
     roleLabels = Map.empty,

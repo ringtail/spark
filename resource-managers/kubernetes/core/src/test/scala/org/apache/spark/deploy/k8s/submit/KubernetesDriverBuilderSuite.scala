@@ -118,7 +118,8 @@ class KubernetesDriverBuilderSuite extends SparkFunSuite {
         Some(JavaMainAppResource("example.jar")),
         "test-app",
         "main",
-        Seq.empty),
+        Seq.empty,
+        None),
       "prefix",
       "appId",
       Map.empty,
@@ -142,7 +143,7 @@ class KubernetesDriverBuilderSuite extends SparkFunSuite {
   test("Apply secrets step if secrets are present.") {
     val conf = KubernetesConf(
       new SparkConf(false),
-      KubernetesDriverSpecificConf(None, "test-app", "main", Seq.empty),
+      KubernetesDriverSpecificConf(None, "test-app", "main", Seq.empty, None),
       "prefix",
       "appId",
       Map.empty,
@@ -168,7 +169,7 @@ class KubernetesDriverBuilderSuite extends SparkFunSuite {
   test("Apply Java step if main resource is none.") {
     val conf = KubernetesConf(
       new SparkConf(false),
-      KubernetesDriverSpecificConf(None, "test-app", "main", Seq.empty),
+      KubernetesDriverSpecificConf(None, "test-app", "main", Seq.empty, None),
       "prefix",
       "appId",
       Map.empty,
@@ -196,7 +197,8 @@ class KubernetesDriverBuilderSuite extends SparkFunSuite {
         Some(PythonMainAppResource("example.py")),
         "test-app",
         "main",
-        Seq.empty),
+        Seq.empty,
+        None),
       "prefix",
       "appId",
       Map.empty,
@@ -222,7 +224,7 @@ class KubernetesDriverBuilderSuite extends SparkFunSuite {
       KubernetesVolumeSpec("volume", "/tmp", false, KubernetesHostPathVolumeConf("/path"))
     val conf = KubernetesConf(
       new SparkConf(false),
-      KubernetesDriverSpecificConf(None, "test-app", "main", Seq.empty),
+      KubernetesDriverSpecificConf(None, "test-app", "main", Seq.empty, None),
       "prefix",
       "appId",
       Map.empty,
@@ -251,7 +253,8 @@ class KubernetesDriverBuilderSuite extends SparkFunSuite {
         Some(RMainAppResource("example.R")),
         "test-app",
         "main",
-        Seq.empty),
+        Seq.empty,
+        None),
       "prefix",
       "appId",
       Map.empty,
