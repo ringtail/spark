@@ -19,7 +19,7 @@ FROM maven:3.5.4-jdk-8 AS build-env
 WORKDIR /spark
 ADD . /spark
 ENV MAVEN_OPTS="-Xmx2g -XX:ReservedCodeCacheSize=1g"
-RUN dev/make-distribution.sh --name dla-spark -Phadoop-2.7 -Phive -Phive-thriftserver -Pkubernetes -T 4 -DskipTests -DrecompileMode=all -X
+RUN dev/make-distribution.sh --name ack-spark -Phadoop-2.7 -Phive -Phive-thriftserver -Pkubernetes -T 4 -DskipTests -DrecompileMode=all -X
 
 
 FROM openjdk:8-jdk-slim
@@ -58,6 +58,8 @@ COPY --from=build-env /spark/dist/data /opt/spark/data
 
 # Setup for the Prometheus JMX exporter.
 RUN mkdir -p /etc/metrics/conf
+# Add jindofs 
+ADD https://smartdata-binary.oss-cn-shanghai.aliyuncs.com/jindofs-sdk-3.1.1.jar $SPARK_HOME/jars
 # Add the Prometheus JMX exporter Java agent jar for exposing metrics sent to the JmxSink to Prometheus.
 ADD https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.12.0/jmx_prometheus_javaagent-0.12.0.jar /prometheus/
 COPY resource-managers/kubernetes/docker/src/main/dockerfiles/spark/conf/metrics.properties /etc/metrics/conf
