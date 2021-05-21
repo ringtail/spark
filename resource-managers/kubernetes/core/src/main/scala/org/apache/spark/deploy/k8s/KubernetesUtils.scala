@@ -28,7 +28,7 @@ private[spark] object KubernetesUtils {
    * return the result as a Map. Keys must not have more than one value.
    *
    * @param sparkConf Spark configuration
-   * @param prefix the given property name prefix
+   * @param prefix    the given property name prefix
    * @return a Map storing the configuration property keys and values
    */
   def parsePrefixedKeyValuePairs(sparkConf: SparkConf, prefix: String): Map[String, String] = {
@@ -64,22 +64,22 @@ private[spark] object KubernetesUtils {
   def parseMasterUrl(url: String): String = url.substring("k8s://".length)
 
   def parseTolerations(tolerationsMap: Map[String, String]): Seq[Toleration] = {
-    val tolerations = Seq.empty[Toleration]
+    var tolerations: Seq[Toleration] = Seq.empty
     for ((key, value) <- tolerationsMap) {
       val t = new Toleration()
       if (key != "*") {
         t.setKey(key)
       }
       if (value.length > 0) {
-        val values = value.split(":", 2)
+        val values = value.split(":", -1)
         if (values.length == 3) {
           t.setValue(values(0))
           t.setOperator(values(1))
           t.setEffect(values(2))
-          tolerations :+ t
+          tolerations :+= t
         }
       }
     }
-    return tolerations
+    tolerations
   }
 }

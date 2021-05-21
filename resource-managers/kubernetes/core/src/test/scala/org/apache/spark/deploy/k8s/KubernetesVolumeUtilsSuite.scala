@@ -16,6 +16,7 @@
  */
 package org.apache.spark.deploy.k8s
 
+import org.apache.spark.deploy.k8s.Config.KUBERNETES_DRIVER_TOLERATION_PREFIX
 import org.apache.spark.{SparkConf, SparkFunSuite}
 
 class KubernetesVolumeUtilsSuite extends SparkFunSuite {
@@ -102,5 +103,18 @@ class KubernetesVolumeUtilsSuite extends SparkFunSuite {
     val volumeSpec = KubernetesVolumeUtils.parseVolumesWithPrefix(sparkConf, "test.").head
     assert(volumeSpec.isFailure === true)
     assert(volumeSpec.failed.get.getMessage === "hostPath.volumeName.options.path")
+  }
+
+  test("Pod tolerations") {
+    val sparkConf = new SparkConf(false)
+    sparkConf.set("spark.kubernetes.driver.toleration.key1", "value1:Equal:NoSchedule")
+    sparkConf.set("spark.kubernetes.driver.toleration.key2", ":Equal:")
+    // parse driver tolerations from sparkConf
+    val driverTolerationsMap =
+      KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_DRIVER_TOLERATION_PREFIX)
+
+    val tolerations = KubernetesUtils.parseTolerations(driverTolerationsMap)
+
+    assert(tolerations.size === 2)
   }
 }
